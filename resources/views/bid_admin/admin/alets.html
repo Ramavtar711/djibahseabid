@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="light"  data-sidebar-size="sm" data-sidebar-image="none">
+   <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Auction</title>
+      <!-- Favicon -->
+      <link rel="shortcut icon" href="assets/img/favicon.png">
+      <!-- Bootstrap CSS -->
+      <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+      <!-- Fontawesome CSS -->
+      <link rel="stylesheet" href="assets/plugins/fontawesome/css/fontawesome.min.css">
+      <link rel="stylesheet" href="assets/plugins/fontawesome/css/all.min.css">
+      <!-- Feather CSS -->
+      <link rel="stylesheet" href="assets/plugins/feather/feather.css">
+      <!-- Datepicker CSS -->
+      <link rel="stylesheet" href="assets/css/bootstrap-datetimepicker.min.css">
+      <!-- Datatables CSS -->
+      <link rel="stylesheet" href="https://cdn.datatables.net/2.2.1/css/dataTables.dataTables.css">
+      <link rel="stylesheet" href="https://cdn.datatables.net/buttons/3.2.0/css/buttons.dataTables.css">
+
+      <!-- Main CSS -->
+      <link rel="stylesheet" href="assets/css/style.css">
+      <!-- Layout JS -->
+      <script src="assets/js/layout.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+   </head>
+   <body class="mini-sidebar">
+      <!-- Main Wrapper -->
+      <div class="main-wrapper">
+         <!-- Header -->
+         <div class="header header-one">
+            <a href="index.html"  class="d-inline-flex d-sm-inline-flex align-items-center d-md-inline-flex d-lg-none align-items-center device-logo">
+            <img src="assets/img/logo-small.png" class="img-fluid logo2" alt="Logo" style="width:50px">
+            </a>
+            <div class="main-logo d-inline float-start d-lg-flex align-items-center d-none d-sm-none d-md-none">
+               <div class="logo-color">
+                  <a href="index.html">
+                  <div class="d-flex gap-2 align-items-center">
+                     <img src="assets/img/logo-small.png" class="img-fluid logo-blue" alt="Logo" style="width:50px !important"> 
+                     
+                  </div>
+                  </a>
+                  <a href="index.html">
+                  <img src="assets/img/logo-small.png" class="img-fluid logo-small" alt="Logo">
+                  </a>
+               </div>
+            </div>
+            <!-- Sidebar Toggle -->
+            <a href="javascript:void(0);" id="toggle_btn">
+            <span class="toggle-bars">
+            <span class="bar-icons"></span>
+            <span class="bar-icons"></span>
+            <span class="bar-icons"></span>
+            <span class="bar-icons"></span>
+            </span>
+            </a>
+            <!-- /Sidebar Toggle -->
+            <!-- Search -->
+            <div class="top-nav-search">
+               <div class="d-flex align-items-center"> 
+                  <img src="assets/img/logo-small.png" class="img-fluid" alt="ÉchoTerra Logo" style="max-width: 50px;">
+                            <h4 class="logo-text">Djibah SeaBid</h4>
+                           </div>
+            </div>
+            <!-- /Search -->
+            <!-- Mobile Menu Toggle -->
+            <a class="mobile_btn" id="mobile_btn">
+            <i class="fas fa-bars"></i>
+            </a>
+            <!-- /Mobile Menu Toggle -->
+            <!-- Header Menu -->
+            <ul class="nav nav-tabs user-menu">
+              
+              
+               <div class="d-flex align-items-center">   
+
+                    
+
+                     <!-- Language Dropdown -->
+                     <div class="nav-item dropdown has-arrow flag-nav me-2">
+                        <a class="btn btn-menubar bg-white" data-bs-toggle="dropdown" href="javascript:void(0);" role="button" aria-expanded="false">
+                           <img src="assets/img/flags/us.svg" alt="Language" class="img-fluid">
+                        </a>
+                        <ul class="dropdown-menu p-2" style="">
+
+                           <!-- item-->
+                           <li>
+                              <a href="javascript:void(0);" class="dropdown-item">
+                                 <img src="assets/img/flags/us.svg" alt="flag" class="me-2">English
+                              </a>
+                           </li>
+
+                           
+
+                           <!-- item-->
+                           <li>
+                              <a href="javascript:void(0);" class="dropdown-item">
+                                 <img src="assets/img/flags/fr.svg" alt="flag" class="me-2">French
+                              </a>
+                           </li>
+
+                           <!-- item-->
+                           <li>
+                              <a href="javascript:void(0);" class="dropdown-item">
+                                 <img src="assets/img/flags/ae.svg" alt="flag" class="me-2">Arabic
+                              </a>
+                           </li>
+
+                        </ul>
+                     </div>
+
+                     <!-- Notification -->
+                     <div class="notification_item me-3">
+                        <a href="#" class="btn btn-menubar position-relative bg-white" id="notification_popup" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                           <i class="bi bi-bell"></i>
+                           <span class="position-absolute badge bg-success border border-white"></span>
+                        </a>
+                        <div class="dropdown-menu p-0 dropdown-menu-end dropdown-menu-lg" style="min-height: 300px;">
+                     
+                           <div class="p-2 border-bottom">
+                              <div class="row align-items-center">
+                                 <div class="col">
+                                    <h6 class="m-0 fs-16 fw-semibold"> Notifications</h6>
+                                 </div>
+                                 <div class="col-auto">
+                                    <div class="dropdown">
+                                       <a href="#" class="dropdown-toggle drop-arrow-none link-dark" data-bs-toggle="dropdown" data-bs-offset="0,15" aria-expanded="false">
+                                          <i class="isax isax-setting-2 fs-16 text-body align-middle"></i>
+                                       </a>
+                                       <div class="dropdown-menu dropdown-menu-end">
+                                          <!-- item-->
+                                          <a href="javascript:void(0);" class="dropdown-item"><i class="ti ti-bell-check me-1"></i>Mark as Read</a>
+                                          <!-- item-->
+                                          <a href="javascript:void(0);" class="dropdown-item"><i class="ti ti-trash me-1"></i>Delete All</a>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                           
+                           <!-- Notification Dropdown -->
+                           <div class="notification-body position-relative z-2 rounded-0 simplebar-scrollable-y" data-simplebar="init"><div class="simplebar-wrapper" style="margin: 0px;"><div class="simplebar-height-auto-observer-wrapper"><div class="simplebar-height-auto-observer"></div></div><div class="simplebar-mask"><div class="simplebar-offset" style="right: 0px; bottom: 0px;"><div class="simplebar-content-wrapper" tabindex="0" role="region" aria-label="scrollable content" style="height: auto; overflow: hidden scroll;"><div class="simplebar-content" style="padding: 0px;">
+                            
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-1">
+                                 <div class="d-flex">
+                                    <div class="me-2 position-relative flex-shrink-0">
+                                       <img src="assets/img/profiles/avatar-05.jpg" class="avatar-md rounded-circle" alt="User Img">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 fw-semibold text-dark">John Smith</p>
+                                       <p class="mb-1 text-wrap fs-14">
+                                          A <span class="fw-semibold">new sale</span> has been recorded.
+                                       </p>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>4 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-1">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                        
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-2">
+                                 <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                       <div class="avatar-sm me-2">
+                                           <span class="avatar-title bg-soft-info text-info fs-18 rounded-circle">
+                                               D
+                                           </span>
+                                       </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 fw-semibold text-dark">Donoghue Susan</p>
+                                       <p class="mb-0 text-wrap fs-14">
+                                          Switched to a lower-tier package
+                                       </p>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>4 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-2">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-3">
+                                 <div class="d-flex">
+                                    <div class="me-2 position-relative flex-shrink-0">
+                                       <img src="assets/img/profiles/avatar-03.jpg" class="avatar-md rounded-circle" alt="User Img">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 fw-semibold text-dark">Robert Fox </p>
+                                       <p class="mb-1 text-wrap fs-14">
+                                          Completed payment for <span class="fw-semibold">#INV00025</span>
+                                       </p>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>4 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-3">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-4">
+                                 <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                       <div class="avatar-sm me-2">
+                                          <span class="avatar-title bg-soft-warning text-warning fs-18 rounded-circle">
+                                             <i class="isax isax-message"></i>
+                                          </span>
+                                       </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 text-wrap fs-14">You have received <span class="fw-semibold">20</span> new messages in the conversation</p>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>3 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-4">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-5">
+                                 <div class="d-flex">
+                                    <div class="me-2 position-relative flex-shrink-0">
+                                       <img src="assets/img/profiles/avatar-17.jpg" class="avatar-md rounded-circle" alt="User Img">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 fw-semibold text-dark">Charlotte Brown</p>
+                                       <p class="mb-1 text-wrap fs-14">
+                                          New invoice generated <span class="fw-semibold"> #INV00028</span>
+                                       </p>
+                                       <div class="mb-1">
+                                          <a class="badge bg-success p-2 py-1 me-1" href="#">Approve</a>
+                                          <a class="badge bg-danger p-2 py-1" href="#">Deny</a>
+                                       </div>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>45 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-5">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                               
+                           </div></div></div></div><div class="simplebar-placeholder" style="width: 320px; height: 412px;"></div></div><div class="simplebar-track simplebar-horizontal" style="visibility: hidden;"><div class="simplebar-scrollbar" style="width: 0px; display: none;"></div></div><div class="simplebar-track simplebar-vertical" style="visibility: visible;"><div class="simplebar-scrollbar" style="height: 190px; transform: translate3d(0px, 0px, 0px); display: block;"></div></div></div>
+                           
+                           <!-- View All-->
+                           <div class="p-2 rounded-bottom border-top text-center">
+                              <a href="notifications.html" class="text-center fw-medium fs-14 mb-0">
+                                 View All
+                              </a>
+                           </div>
+                           
+                        </div>
+                     </div>
+
+                    
+
+                     <!-- User Dropdown -->
+                     <div class="dropdown profile-dropdown">
+                        <a href="javascript:void(0);" class="dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                           <span class="avatar online">
+                              <img src="assets/img/profiles/avatar-01.jpg" alt="Img" class="img-fluid rounded-circle">
+                           </span>
+                        </a>
+                        <div class="dropdown-menu p-2">
+                           <div class="d-flex align-items-center bg-light rounded-1 p-2 mb-2">
+                              <span class="avatar avatar-lg me-2">
+                                 <img src="assets/img/profiles/avatar-01.jpg" alt="img" class="rounded-circle">
+                              </span>
+                              <div>
+                                 <h6 class="fs-12 fw-medium mb-1">Jafna Cremson</h6>
+                                 <p class="fs-10">Administrator</p>
+                              </div>
+                           </div>
+
+                           <!-- Item-->
+                           <a class="dropdown-item d-flex align-items-center" href="/admin/account-settings">
+                              <i class="isax isax-profile-circle me-2"></i>Profile Settings
+                           </a>
+
+
+
+                           <hr class="dropdown-divider my-2">
+
+                           <!-- Item-->
+                           <a class="dropdown-item logout d-flex align-items-center" href="login.html">
+                              <i class="isax isax-logout me-2"></i>Sign Out
+                           </a>
+                        </div>
+                     </div>
+
+                  </div>
+            </ul>
+            <!-- /Header Menu -->
+         </div>
+         <!-- /Header -->
+         <!-- Sidebar -->
+         <div class="sidebar" id="sidebar">
+            <div class="sidebar-inner slimscroll">
+               <div id="sidebar-menu" class="sidebar-menu">
+
+                  <ul class="sidebar-vertical">
+                     <li>
+                        <a href="dashboard.html"><i class="fe fe-home"></i> <span> Dashboard</span> </a>
+
+                     </li>
+                     <!-- Main -->
+                     <li class="menu-title"><span>AUCTIONS</span></li>
+                     
+                     <li>
+                        <a href="live-auction.html"><i class="bi bi-broadcast"></i> <span> Live</span> </a>
+
+                     </li>
+
+                     <li>
+                        <a href="upcoming-auction.html"><i class="bi bi-hourglass-bottom"></i> <span> Upcoming</span> </a>
+
+                     </li>
+                     <li>
+                        <a href="lot-management.html"><i class="bi bi-box"></i> <span> Lots Managements</span> </a>
+
+                     </li>
+                     <li class="menu-title"><span>USERS</span></li>
+
+                     <li>
+                        <a href="buyers.html"><i class="bi bi-person"></i> <span> Buyers</span> </a>
+
+                     </li>
+                     <li>
+                        <a href="sellers.html"><i class="bi bi-person"></i> <span> Sellers</span> </a>
+
+                     </li>
+
+                     <li class="menu-title"><span>FINANCIAL CONTROL</span></li>
+                     <li>
+                        <a href="/admin/finance-overview"><i class="bi bi-bar-chart"></i> <span> Finance Overview</span> </a>
+
+                     </li>
+                     <li>
+                        <a href="/admin/transactions"><i class="bi bi-cash-coin"></i> <span> Transactions</span> </a>
+
+                     </li>
+                     <li>
+                        <a href="/admin/bank-transfer"><i class="bi bi-cash"></i> <span> Bank Transfer</span> </a>
+
+                     </li>
+                     <li class="menu-title"><span>DISPUTE</span></li>
+                     <li>
+                        <a href="/admin/risk-monitoring"><i class="bi bi-exclamation-triangle"></i> <span> Risk Monitoring </span> </a>
+
+                     </li>
+
+                     <li class="menu-title"><span>OTHERS</span></li>
+                     <li>
+                        <a href="/admin/alets" class="active"><i class="bi bi-bell"></i> <span> Alerts</span> </a>
+
+                     </li>
+                     
+                     <li>
+                        <a href="/admin/settings"><i class="fe fe-settings"></i> <span> Settings</span> </a>
+
+                     </li>
+               </div>
+            </div>
+         </div>
+         <!-- /Sidebar -->
+         <!-- Page Wrapper -->
+         <div class="page-wrapper">
+            <div class="content container-fluid">
+              
+              <div class="status-header d-flex flex-wrap justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-4">
+            <div class="small"><i class="bi bi-circle-fill text-success me-1"></i> SYSTEM STATUS: <strong>LIVE</strong></div>
+            <div class="small"><i class="bi bi-circle-fill text-danger me-1"></i> <strong>6</strong> Live Auctions</div>
+            <div class="small"><i class="bi bi-circle-fill text-warning me-1"></i> <strong>3</strong> Upcoming</div>
+            <div class="small"><i class="bi bi-circle-fill text-success me-1"></i> <strong>$12,450</strong> Revenue Today</div>
+        </div>
+        <div class="fw-bold">48 <span class="text-muted fw-normal">Buyers Online</span></div>
+    </div>
+    
+     <style>
+     .notification-card{
+background: var(--surface-white);
+padding:15px;
+border-radius:12px;
+margin-bottom:12px;
+display:flex;
+align-items:center;
+gap:15px;
+box-shadow:0 3px 12px rgba(0,0,0,0.05);
+}
+
+.notification-avatar{
+width:45px;
+height:45px;
+border-radius:50%;
+object-fit:cover;
+}
+
+.notification-content{
+flex:1;
+}
+
+.notification-time{
+font-size:12px;
+color:gray;
+}
+
+.unread{
+border-left:4px solid #0d6efd;
+background: var(--surface-white);
+}
+
+   }
+
+     </style>
+     <div class="d-flex justify-content-between align-items-center mb-4">
+<h4 class="fw-bold">Notifications</h4>
+<button class="btn btn-sm btn-outline-primary">
+<i class="bi bi-check2-all"></i> Mark All as Read
+</button>
+</div>
+    
+
+      
+     <div class="notification-card unread">
+         <img class="notification-avatar" src="https://i.pravatar.cc/100?img=5">
+         <div class="notification-content">
+            <div class="d-flex justify-content-between">
+               <strong>New Auction Payment Received</strong> <span class="notification-time">2 min ago</span>
+            </div>
+            <p class="mb-1 text-muted">Oceanic Traders completed payment for Auction AUC1024.</p><span class="badge bg-success">Payment</span>
+         </div>
+      </div>
+      <div class="notification-card unread">
+         <img class="notification-avatar" src="https://i.pravatar.cc/100?img=8">
+         <div class="notification-content">
+            <div class="d-flex justify-content-between">
+               <strong>Pending KYC Verification</strong> <span class="notification-time">15 min ago</span>
+            </div>
+            <p class="mb-1 text-muted">New seller "BlueWave Exports" requires KYC validation.</p><span class="badge bg-warning text-dark">KYC</span>
+         </div>
+      </div>
+      <div class="notification-card">
+         <img class="notification-avatar" src="https://i.pravatar.cc/100?img=12">
+         <div class="notification-content">
+            <div class="d-flex justify-content-between">
+               <strong>Suspicious Bidding Activity</strong> <span class="notification-time">1 hour ago</span>
+            </div>
+            <p class="mb-1 text-muted">Multiple bids detected from the same IP for Auction AUC1030.</p><span class="badge bg-danger">Risk Alert</span>
+         </div>
+      </div>
+      <div class="notification-card">
+         <img class="notification-avatar" src="https://i.pravatar.cc/100?img=9">
+         <div class="notification-content">
+            <div class="d-flex justify-content-between">
+               <strong>New Seller Registration</strong> <span class="notification-time">3 hours ago</span>
+            </div>
+            <p class="mb-1 text-muted">Pacific Export Ltd created a new seller account.</p><span class="badge bg-primary">Account</span>
+         </div>
+      </div>
+      <div class="notification-card">
+         <img class="notification-avatar" src="https://i.pravatar.cc/100?img=4">
+         <div class="notification-content">
+            <div class="d-flex justify-content-between">
+               <strong>Bank Transfer Pending Validation</strong> <span class="notification-time">Yesterday</span>
+            </div>
+            <p class="mb-1 text-muted">Payment proof uploaded for Auction AUC1028.</p><span class="badge bg-info">Finance</span>
+         </div>
+      </div>
+
+
+      </div>
+
+              
+              
+            </div>
+         </div>
+         <!-- /Page Wrapper -->
+      </div>
+      <!-- /Main Wrapper -->
+ <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" data-cfasync="false"></script>
+
+    
+      <!-- jQuery -->
+      <script src="assets/js/jquery-3.7.1.min.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Bootstrap Core JS -->
+      <script src="assets/js/bootstrap.bundle.min.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Feather Icon JS -->
+      <script src="assets/js/feather.min.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Slimscroll JS -->
+      <script src="assets/plugins/slimscroll/jquery.slimscroll.min.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Theme Settings JS -->
+      <script src="assets/js/theme-settings.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <script src="assets/js/greedynav.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Custom JS -->
+      <script src="assets/js/script.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <script src="cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="0e2fa082a2170f67f9b374b7-|49" defer></script>
+
+     
+   </body>
+</html>

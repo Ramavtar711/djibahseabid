@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="light"  data-sidebar-size="sm" data-sidebar-image="none">
+   <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Auction</title>
+      <!-- Favicon -->
+      <link rel="shortcut icon" href="assets/img/favicon.png">
+      <!-- Bootstrap CSS -->
+      <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+      <!-- Fontawesome CSS -->
+      <link rel="stylesheet" href="assets/plugins/fontawesome/css/fontawesome.min.css">
+      <link rel="stylesheet" href="assets/plugins/fontawesome/css/all.min.css">
+      <!-- Feather CSS -->
+      <link rel="stylesheet" href="assets/plugins/feather/feather.css">
+      <!-- Datepicker CSS -->
+      <link rel="stylesheet" href="assets/css/bootstrap-datetimepicker.min.css">
+      <!-- Datatables CSS -->
+      <link rel="stylesheet" href="https://cdn.datatables.net/2.2.1/css/dataTables.dataTables.css">
+      <link rel="stylesheet" href="https://cdn.datatables.net/buttons/3.2.0/css/buttons.dataTables.css">
+
+      <!-- Main CSS -->
+      <link rel="stylesheet" href="assets/css/style.css">
+      <!-- Layout JS -->
+      <script src="assets/js/layout.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+   </head>
+   <body class="mini-sidebar">
+      <!-- Main Wrapper -->
+      <div class="main-wrapper">
+         <!-- Header -->
+         <div class="header header-one">
+            <a href="index.html"  class="d-inline-flex d-sm-inline-flex align-items-center d-md-inline-flex d-lg-none align-items-center device-logo">
+            <img src="assets/img/logo-small.png" class="img-fluid logo2" alt="Logo" style="width:50px">
+            </a>
+            <div class="main-logo d-inline float-start d-lg-flex align-items-center d-none d-sm-none d-md-none">
+               <div class="logo-color">
+                  <a href="index.html">
+                  <div class="d-flex gap-2 align-items-center">
+                     <img src="assets/img/logo-small.png" class="img-fluid logo-blue" alt="Logo" style="width:50px !important"> 
+                     
+                  </div>
+                  </a>
+                  <a href="index.html">
+                  <img src="assets/img/logo-small.png" class="img-fluid logo-small" alt="Logo">
+                  </a>
+               </div>
+            </div>
+            <!-- Sidebar Toggle -->
+            <a href="javascript:void(0);" id="toggle_btn">
+            <span class="toggle-bars">
+            <span class="bar-icons"></span>
+            <span class="bar-icons"></span>
+            <span class="bar-icons"></span>
+            <span class="bar-icons"></span>
+            </span>
+            </a>
+            <!-- /Sidebar Toggle -->
+            <!-- Search -->
+            <div class="top-nav-search">
+               <div class="d-flex align-items-center"> 
+                  <img src="assets/img/logo-small.png" class="img-fluid" alt="ÉchoTerra Logo" style="max-width: 50px;">
+                            <h4 class="logo-text">Djibah SeaBid</h4>
+                           </div>
+            </div>
+            <!-- /Search -->
+            <!-- Mobile Menu Toggle -->
+            <a class="mobile_btn" id="mobile_btn">
+            <i class="fas fa-bars"></i>
+            </a>
+            <!-- /Mobile Menu Toggle -->
+            <!-- Header Menu -->
+            <ul class="nav nav-tabs user-menu">
+              
+              
+               <div class="d-flex align-items-center">   
+
+                    
+
+                     <!-- Language Dropdown -->
+                     <div class="nav-item dropdown has-arrow flag-nav me-2">
+                        <a class="btn btn-menubar" data-bs-toggle="dropdown" href="javascript:void(0);" role="button" aria-expanded="false">
+                           <img src="assets/img/flags/us.svg" alt="Language" class="img-fluid">
+                        </a>
+                        <ul class="dropdown-menu p-2" style="">
+
+                           <!-- item-->
+                           <li>
+                              <a href="javascript:void(0);" class="dropdown-item">
+                                 <img src="assets/img/flags/us.svg" alt="flag" class="me-2">English
+                              </a>
+                           </li>
+
+                           
+
+                           <!-- item-->
+                           <li>
+                              <a href="javascript:void(0);" class="dropdown-item">
+                                 <img src="assets/img/flags/fr.svg" alt="flag" class="me-2">French
+                              </a>
+                           </li>
+
+                           <!-- item-->
+                           <li>
+                              <a href="javascript:void(0);" class="dropdown-item">
+                                 <img src="assets/img/flags/ae.svg" alt="flag" class="me-2">Arabic
+                              </a>
+                           </li>
+
+                        </ul>
+                     </div>
+
+                     <!-- Notification -->
+                     <div class="notification_item me-3">
+                        <a href="#" class="btn btn-menubar position-relative" id="notification_popup" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                           <i class="bi bi-bell"></i>
+                           <span class="position-absolute badge bg-success border border-white"></span>
+                        </a>
+                        <div class="dropdown-menu p-0 dropdown-menu-end dropdown-menu-lg" style="min-height: 300px;">
+                     
+                           <div class="p-2 border-bottom">
+                              <div class="row align-items-center">
+                                 <div class="col">
+                                    <h6 class="m-0 fs-16 fw-semibold"> Notifications</h6>
+                                 </div>
+                                 <div class="col-auto">
+                                    <div class="dropdown">
+                                       <a href="#" class="dropdown-toggle drop-arrow-none link-dark" data-bs-toggle="dropdown" data-bs-offset="0,15" aria-expanded="false">
+                                          <i class="isax isax-setting-2 fs-16 text-body align-middle"></i>
+                                       </a>
+                                       <div class="dropdown-menu dropdown-menu-end">
+                                          <!-- item-->
+                                          <a href="javascript:void(0);" class="dropdown-item"><i class="ti ti-bell-check me-1"></i>Mark as Read</a>
+                                          <!-- item-->
+                                          <a href="javascript:void(0);" class="dropdown-item"><i class="ti ti-trash me-1"></i>Delete All</a>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                           
+                           <!-- Notification Dropdown -->
+                           <div class="notification-body position-relative z-2 rounded-0 simplebar-scrollable-y" data-simplebar="init"><div class="simplebar-wrapper" style="margin: 0px;"><div class="simplebar-height-auto-observer-wrapper"><div class="simplebar-height-auto-observer"></div></div><div class="simplebar-mask"><div class="simplebar-offset" style="right: 0px; bottom: 0px;"><div class="simplebar-content-wrapper" tabindex="0" role="region" aria-label="scrollable content" style="height: auto; overflow: hidden scroll;"><div class="simplebar-content" style="padding: 0px;">
+                            
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-1">
+                                 <div class="d-flex">
+                                    <div class="me-2 position-relative flex-shrink-0">
+                                       <img src="assets/img/profiles/avatar-05.jpg" class="avatar-md rounded-circle" alt="User Img">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 fw-semibold text-dark">John Smith</p>
+                                       <p class="mb-1 text-wrap fs-14">
+                                          A <span class="fw-semibold">new sale</span> has been recorded.
+                                       </p>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>4 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-1">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                        
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-2">
+                                 <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                       <div class="avatar-sm me-2">
+                                           <span class="avatar-title bg-soft-info text-info fs-18 rounded-circle">
+                                               D
+                                           </span>
+                                       </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 fw-semibold text-dark">Donoghue Susan</p>
+                                       <p class="mb-0 text-wrap fs-14">
+                                          Switched to a lower-tier package
+                                       </p>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>4 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-2">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-3">
+                                 <div class="d-flex">
+                                    <div class="me-2 position-relative flex-shrink-0">
+                                       <img src="assets/img/profiles/avatar-03.jpg" class="avatar-md rounded-circle" alt="User Img">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 fw-semibold text-dark">Robert Fox </p>
+                                       <p class="mb-1 text-wrap fs-14">
+                                          Completed payment for <span class="fw-semibold">#INV00025</span>
+                                       </p>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>4 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-3">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-4">
+                                 <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                       <div class="avatar-sm me-2">
+                                          <span class="avatar-title bg-soft-warning text-warning fs-18 rounded-circle">
+                                             <i class="isax isax-message"></i>
+                                          </span>
+                                       </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 text-wrap fs-14">You have received <span class="fw-semibold">20</span> new messages in the conversation</p>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>3 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-4">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-5">
+                                 <div class="d-flex">
+                                    <div class="me-2 position-relative flex-shrink-0">
+                                       <img src="assets/img/profiles/avatar-17.jpg" class="avatar-md rounded-circle" alt="User Img">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 fw-semibold text-dark">Charlotte Brown</p>
+                                       <p class="mb-1 text-wrap fs-14">
+                                          New invoice generated <span class="fw-semibold"> #INV00028</span>
+                                       </p>
+                                       <div class="mb-1">
+                                          <a class="badge bg-success p-2 py-1 me-1" href="#">Approve</a>
+                                          <a class="badge bg-danger p-2 py-1" href="#">Deny</a>
+                                       </div>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>45 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-5">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                               
+                           </div></div></div></div><div class="simplebar-placeholder" style="width: 320px; height: 412px;"></div></div><div class="simplebar-track simplebar-horizontal" style="visibility: hidden;"><div class="simplebar-scrollbar" style="width: 0px; display: none;"></div></div><div class="simplebar-track simplebar-vertical" style="visibility: visible;"><div class="simplebar-scrollbar" style="height: 190px; transform: translate3d(0px, 0px, 0px); display: block;"></div></div></div>
+                           
+                           <!-- View All-->
+                           <div class="p-2 rounded-bottom border-top text-center">
+                              <a href="notifications.html" class="text-center fw-medium fs-14 mb-0">
+                                 View All
+                              </a>
+                           </div>
+                           
+                        </div>
+                     </div>
+
+                    
+
+                     <!-- User Dropdown -->
+                     <div class="dropdown profile-dropdown">
+                        <a href="javascript:void(0);" class="dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                           <span class="avatar online">
+                              <img src="assets/img/profiles/avatar-01.jpg" alt="Img" class="img-fluid rounded-circle">
+                           </span>
+                        </a>
+                        <div class="dropdown-menu p-2">
+                           <div class="d-flex align-items-center bg-light rounded-1 p-2 mb-2">
+                              <span class="avatar avatar-lg me-2">
+                                 <img src="assets/img/profiles/avatar-01.jpg" alt="img" class="rounded-circle">
+                              </span>
+                              <div>
+                                 <h6 class="fs-12 fw-medium mb-1">Rocky</h6>
+                                 <p class="fs-10">Buyer</p>
+                              </div>
+                           </div>
+
+                           <!-- Item-->
+                           <a class="dropdown-item d-flex align-items-center" href="account-settings.html">
+                              <i class="isax isax-profile-circle me-2"></i>Profile Settings
+                           </a>
+
+
+
+                           <hr class="dropdown-divider my-2">
+
+                           <!-- Item-->
+                           <a class="dropdown-item logout d-flex align-items-center" href="login.html">
+                              <i class="isax isax-logout me-2"></i>Sign Out
+                           </a>
+                        </div>
+                     </div>
+
+                  </div>
+            </ul>
+            <!-- /Header Menu -->
+         </div>
+         <!-- /Header -->
+         <!-- Sidebar -->
+         <div class="sidebar" id="sidebar">
+            <div class="sidebar-inner slimscroll">
+               <div id="sidebar-menu" class="sidebar-menu">
+
+                  <ul class="sidebar-vertical">
+                     <li>
+                        <a href="dashboard.html"><i class="fe fe-home"></i> <span> Dashboard</span> </a>
+
+                     </li>
+                    
+                     
+                     <li>
+                        <a href="active-auction.html"><i class="bi bi-broadcast"></i> <span> Active Auction</span> </a>
+
+                     </li>
+
+                     <li>
+                        <a href="upcoming-auction.html"><i class="bi bi-hourglass-bottom"></i> <span> Upcoming Auction</span> </a>
+
+                     </li>
+                     <li>
+                        <a href="won-auction.html"><i class="bi bi-check-lg"></i> <span> Won Auction</span> </a>
+
+                     </li>
+                    
+ 
+                     <li>
+                        <a href="transactions.html" class="active"><i class="bi bi-cash-coin"></i> <span> My Payments </span> </a>
+
+                     </li>
+                     <li>
+                        <a href="participation-history.html"><i class="bi bi-list"></i> <span> Participation History</span> </a>
+
+                     </li>
+
+                     
+                     
+
+                     
+               </div>
+            </div>
+         </div>
+         <!-- /Sidebar -->
+         <!-- Page Wrapper -->
+         <div class="page-wrapper">
+
+         	 <style>
+        
+
+       
+
+        /* Summary Bar */
+        .stat-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px; padding: 20px 20px;
+            color: #fff;
+           
+        }
+        .stat-label { font-size: 14px; text-transform: uppercase; color: #fff; letter-spacing: 1px; font-weight: bold;}
+        .stat-val {  font-size: 1.4rem; font-weight: 700; }
+
+        /* Navigation Tabs */
+        .nav-pills-custom {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px; padding: 6px;
+            margin-bottom: 30px;
+        }
+        .nav-pills-custom .nav-link {
+            color:#fff;
+            border-radius: 10px; padding: 12px 25px;
+            font-weight: 700; font-size: 0.85rem; transition: 0.3s;
+        }
+        .nav-pills-custom .nav-link.active {
+            background: var(--accent-cyan); color: #000;
+        }
+        .nav-pills-custom .nav-link:hover:not(.active) {
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* Filter Section */
+        .filter-row {
+            display: grid; grid-template-columns: 2fr 1fr 1fr 60px; gap: 15px;
+            margin-bottom: 20px;
+        }
+        .f-input {
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;  padding: 10px 15px; font-size: 0.85rem;
+        }
+
+        /* Table Aesthetics */
+        .transaction-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; color: #fff;
+}
+        .transaction-table tr { background: rgba(255,255,255,0.02); transition: 0.2s; }
+        .transaction-table td { 
+            padding: 16px; vertical-align: middle; 
+            border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border);
+        }
+        .transaction-table td:first-child { border-left: 1px solid var(--glass-border); border-radius: 12px 0 0 12px; }
+        .transaction-table td:last-child { border-right: 1px solid var(--glass-border); border-radius: 0 12px 12px 0; }
+
+        /* Card Design (for Card Tab) */
+        .credit-card-ui {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border-radius: 16px; padding: 25px; width: 100%;
+            position: relative; overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+        .card-chip { width: 45px; height: 35px; background: #f1c40f; border-radius: 6px; margin-bottom: 20px; }
+        .card-num { font-size: 1.2rem; letter-spacing: 3px; color: #fff; }
+
+        /* Status Badges */
+        .status-pill {
+            font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+            padding: 5px 12px; border-radius: 6px; border: 1px solid transparent;
+        }
+        .st-done { background: rgba(0, 255, 136, 0.1); color: var(--success); border-color: var(--success); }
+        .st-pending { background: rgba(255, 193, 7, 0.1); color: var(--warning); border-color: var(--warning); }
+        .st-refund { background: rgba(168, 85, 247, 0.1); color: var(--purple); border-color: var(--purple); }
+
+    </style>
+            <div class="content container-fluid">
+              <div class="page-header">
+    <div class="row align-items-center">
+      <div class="col">
+        <h1 class="page-title text-white">Payments</h1>
+        <p class="text-white">Manage all type of payment and transactions</p>
+      </div>
+      <div class="col-auto">
+        
+       
+      </div>
+    </div>
+  </div>
+          
+   
+   <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Wallet Balance</div>
+                <div class="stat-val text-success">$14,200.50</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Pending Settlements</div>
+                <div class="stat-val text-warning">$5,040.00</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Refunds Issued</div>
+                <div class="stat-val text-purple" style="color:var(--purple)">$1,120.00</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-label">Active Methods</div>
+                <div class="stat-val text-info">3 Sources</div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-pills nav-pills-custom" id="pills-tab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pills-all-tab" data-bs-toggle="pill" data-bs-target="#pills-all" type="button"><i class="bi bi-grid-fill me-2"></i>All Transactions</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-card-tab" data-bs-toggle="pill" data-bs-target="#pills-card" type="button"><i class="bi bi-credit-card-fill me-2"></i>Card Payments</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-bank-tab" data-bs-toggle="pill" data-bs-target="#pills-bank" type="button"><i class="bi bi-bank2 me-2"></i>Bank Transfers</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-refund-tab" data-bs-toggle="pill" data-bs-target="#pills-refund" type="button"><i class="bi bi-arrow-counterclockwise me-2"></i>Refunds</button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="pills-tabContent">
+        
+        <div class="tab-pane fade show active" id="pills-all" role="tabpanel">
+    
+    <div class="filter-row">
+        <input type="text" class="f-input" placeholder="Search Auction ID or Txn Hash...">
+        <input type="date" class="f-input" value="2026-03-03">
+        <select class="f-input">
+            <option>All Status</option>
+            <option>Success</option>
+            <option>Pending</option>
+            <option>Refunded</option>
+        </select>
+        <button class="btn btn-primary rounded-3"><i class="bi bi-search"></i></button>
+    </div>
+
+    <table class="submitted-table">
+        <thead>
+            <tr>
+                <th class="ps-3 pb-2">Date/Time</th>
+                <th class="pb-2">Auction Ref</th>
+                <th class="pb-2">Payment Method</th>
+                <th class="pb-2">Status</th>
+                <th class="text-end pb-2">Amount</th>
+                <th class="text-end pe-3 pb-2">Doc</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="ps-3">
+                    <div class="small">Mar 03, 2026</div>
+                    <div class="opacity-50" style="font-size: 0.7rem;">18:45 PM</div>
+                </td>
+                <td><span class="fw-bold text-info">#A-4491</span></td>
+                <td><i class="bi bi-bank me-2 opacity-50 text-info"></i>Wire Transfer (IBAN)</td>
+                <td><span class="status-pill st-done">Success</span></td>
+                <td class="text-end fw-bold text-white">-$12,400.00</td>
+                <td class="text-end text-white-50 pe-3"><i class="bi bi-file-earmark-pdf cursor-pointer"></i></td>
+            </tr>
+
+            <tr>
+                <td class="ps-3">
+                    <div class="small">Mar 03, 2026</div>
+                    <div class="opacity-50" style="font-size: 0.7rem;">16:20 PM</div>
+                </td>
+                <td><span class="fw-bold text-info">#A-4488</span></td>
+                <td><i class="bi bi-credit-card me-2 opacity-50 text-info"></i>Visa •••• 8821</td>
+                <td><span class="status-pill st-done">Success</span></td>
+                <td class="text-end fw-bold text-white">-$2,150.40</td>
+                <td class="text-end text-white-50 pe-3"><i class="bi bi-file-earmark-pdf"></i></td>
+            </tr>
+
+            <tr>
+                <td class="ps-3">
+                    <div class="small">Mar 02, 2026</div>
+                    <div class="opacity-50" style="font-size: 0.7rem;">11:05 AM</div>
+                </td>
+                <td><span class="fw-bold text-info">#A-4410</span></td>
+                <td><i class="bi bi-arrow-counterclockwise me-2 opacity-50 text-purple"></i>Refund Credit</td>
+                <td><span class="status-pill st-refund">Refunded</span></td>
+                <td class="text-end fw-bold text-success">+$1,120.00</td>
+                <td class="text-end text-white-50 pe-3"><i class="bi bi-file-earmark-check"></i></td>
+            </tr>
+
+            <tr>
+                <td class="ps-3">
+                    <div class="small">Mar 02, 2026</div>
+                    <div class="opacity-50" style="font-size: 0.7rem;">09:15 AM</div>
+                </td>
+                <td><span class="fw-bold text-info">#A-4405</span></td>
+                <td><i class="bi bi-bank me-2 opacity-50 text-info"></i>Wire Transfer</td>
+                <td><span class="status-pill st-pending">Pending</span></td>
+                <td class="text-end fw-bold text-warning">-$5,040.00</td>
+                <td class="text-end text-white-50 pe-3"><i class="bi bi-clock-history"></i></td>
+            </tr>
+
+            <tr>
+                <td class="ps-3">
+                    <div class="small">Mar 01, 2026</div>
+                    <div class="opacity-50" style="font-size: 0.7rem;">14:30 PM</div>
+                </td>
+                <td><span class="fw-bold text-white">#LOG-882</span></td>
+                <td><i class="bi bi-truck me-2 opacity-50"></i>Cold Chain Logistics</td>
+                <td><span class="status-pill st-done">Success</span></td>
+                <td class="text-end fw-bold text-white">-$450.00</td>
+                <td class="text-end text-white-50 pe-3"><i class="bi bi-file-earmark-pdf"></i></td>
+            </tr>
+
+            <tr>
+                <td class="ps-3">
+                    <div class="small">Feb 28, 2026</div>
+                    <div class="opacity-50" style="font-size: 0.7rem;">22:10 PM</div>
+                </td>
+                <td><span class="fw-bold text-info">#A-4390</span></td>
+                <td><i class="bi bi-credit-card me-2 opacity-50 text-info"></i>Visa •••• 8821</td>
+                <td><span class="status-pill st-done">Success</span></td>
+                <td class="text-end fw-bold text-white">-$8,900.00</td>
+                <td class="text-end text-white-50 pe-3"><i class="bi bi-file-earmark-pdf"></i></td>
+            </tr>
+
+            <tr>
+                <td class="ps-3">
+                    <div class="small">Feb 27, 2026</div>
+                    <div class="opacity-50" style="font-size: 0.7rem;">10:00 AM</div>
+                </td>
+                <td><span class="fw-bold text-white">#DEP-101</span></td>
+                <td><i class="bi bi-cash-stack me-2 opacity-50"></i>Wallet Top-up</td>
+                <td><span class="status-pill st-done">Success</span></td>
+                <td class="text-end fw-bold text-success">+$25,000.00</td>
+                <td class="text-end text-white-50 pe-3"><i class="bi bi-file-earmark-text"></i></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+        <div class="tab-pane fade" id="pills-card" role="tabpanel">
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="credit-card-ui mb-4">
+                        <div class="d-flex justify-content-between align-items-start mb-4">
+                            <div class="card-chip"></div>
+                            <i class="bi bi-stripe fs-2 text-white-50"></i>
+                        </div>
+                        <div class="card-num mb-3">4412 •••• •••• 8821</div>
+                        <div class="d-flex justify-content-between small text-white">
+                            <span>AHMED AL-MAJED</span>
+                            <span>12/28</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-outline-info w-100 py-3 rounded-4"><i class="bi bi-plus-lg me-2"></i>Add New Card</button>
+                </div>
+                <div class="col-md-7 ps-md-5">
+                    <h6 class="fw-bold  text-white mb-3 text-uppercase small">Card History</h6>
+                    <div class="transaction-table">
+                        <div class="p-3 border-bottom border-white border-opacity-10 d-flex justify-content-between">
+                            <span>Visa Payment - Lot #991</span>
+                            <span class="fw-bold">-$250.00</span>
+                        </div>
+                        <div class="p-3 border-bottom border-white border-opacity-10 d-flex justify-content-between">
+                            <span>Mastercard - Lot #812</span>
+                            <span class="fw-bold">-$1,400.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="pills-bank" role="tabpanel">
+            <div class="stat-card mb-4" style="border-style: dashed;">
+                <h6 class="fw-bold text-info"><i class="bi bi-info-circle me-2"></i>Official Wire Instructions</h6>
+                <div class="row mt-3 g-4">
+                    <div class="col-md-4"><small class="label opacity-50 d-block">Bank Name</small><strong>SeaBank International</strong></div>
+                    <div class="col-md-4"><small class="label opacity-50 d-block">IBAN</small><strong>AE12 9900 1100 2200</strong></div>
+                    <div class="col-md-4"><small class="label opacity-50 d-block">Swift Code</small><strong>SEABNK_DXB</strong></div>
+                </div>
+            </div>
+            <div class="alert alert-info bg-dark border-info text-info small">
+                <i class="bi bi-lightbulb me-2"></i> Include your Auction ID in the payment reference for instant verification.
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="pills-refund" role="tabpanel">
+            <div class="text-center py-5">
+                <div class="display-6 opacity-25 mb-3"><i class="bi bi-arrow-counterclockwise"></i></div>
+                <h5 class="fw-bold">No active refunds in progress</h5>
+                <p class="text-white-50 small">All previous refunds have been successfully settled to your original payment source.</p>
+            </div>
+        </div>
+
+    </div>
+
+        
+   
+
+</div>
+</div>
+
+              
+              
+            </div>
+         </div>
+         <!-- /Page Wrapper -->
+      </div>
+      <!-- /Main Wrapper -->
+ <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" data-cfasync="false"></script>
+
+    
+      <!-- jQuery -->
+      <script src="assets/js/jquery-3.7.1.min.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Bootstrap Core JS -->
+      <script src="assets/js/bootstrap.bundle.min.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Feather Icon JS -->
+      <script src="assets/js/feather.min.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Slimscroll JS -->
+      <script src="assets/plugins/slimscroll/jquery.slimscroll.min.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Theme Settings JS -->
+      <script src="assets/js/theme-settings.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <script src="assets/js/greedynav.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Custom JS -->
+      <script src="assets/js/script.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <script src="cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="0e2fa082a2170f67f9b374b7-|49" defer></script>
+
+  <script>
+
+// Donut Chart
+new Chart(document.getElementById('bidChart'),{
+    type:'doughnut',
+    data:{
+        labels:['Used','Remaining'],
+        datasets:[{
+            data:[12500, 37500],
+            backgroundColor:['#3d7eff','#cce0ff']
+        }]
+    },
+    options:{ plugins:{ legend:{ display:false } } }
+});
+
+// Bar Chart
+new Chart(document.getElementById('barChart'),{
+    type:'bar',
+    data:{
+        labels:['Mon','Tue','Wed','Thu','Fri'],
+        datasets:[{
+            data:[500,900,700,1000,1200],
+            backgroundColor:'#3d7eff'
+        }]
+    },
+    options:{ plugins:{ legend:{ display:false } } }
+});
+
+</script>
+   </body>
+</html>
+
+

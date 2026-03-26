@@ -1,0 +1,29 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+    RewriteBase /djibahseabid/
+
+    # Keep Authorization header available for PHP.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Serve static assets from public directory.
+    RewriteRule ^admin/assets/(.*)$ public/admin/assets/$1 [L]
+    RewriteRule ^home/assets/(.*)$ public/home/assets/$1 [L]
+    RewriteRule ^seller/assets/(.*)$ public/seller/assets/$1 [L]
+    RewriteRule ^seller/cdn-cgi/(.*)$ public/seller/cdn-cgi/$1 [L]
+    RewriteRule ^buyer/assets/(.*)$ public/buyer/assets/$1 [L]
+    RewriteRule ^buyer/cdn-cgi/(.*)$ public/buyer/cdn-cgi/$1 [L]
+    RewriteRule ^assets/(.*)$ public/assets/$1 [L]
+    RewriteRule ^icons/(.*)$ public/icons/$1 [L]
+    RewriteRule ^storage/(.*)$ public/storage/$1 [L]
+    RewriteRule ^(favicon\.ico|robots\.txt|manifest\.json|service-worker\.js|pwa-192\.png|pwa-512\.png)$ public/$1 [L]
+
+    # Forward all other requests to Laravel front controller at project root.
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>

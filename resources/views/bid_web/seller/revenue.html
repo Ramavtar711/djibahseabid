@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="light"  data-sidebar-size="sm" data-sidebar-image="none">
+   <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Auction</title>
+      <!-- Favicon -->
+      <link rel="shortcut icon" href="assets/img/favicon.png">
+      <!-- Bootstrap CSS -->
+      <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+      <!-- Fontawesome CSS -->
+      <link rel="stylesheet" href="assets/plugins/fontawesome/css/fontawesome.min.css">
+      <link rel="stylesheet" href="assets/plugins/fontawesome/css/all.min.css">
+      <!-- Feather CSS -->
+      <link rel="stylesheet" href="assets/plugins/feather/feather.css">
+      <!-- Datepicker CSS -->
+      <link rel="stylesheet" href="assets/css/bootstrap-datetimepicker.min.css">
+      <!-- Datatables CSS -->
+      <link rel="stylesheet" href="https://cdn.datatables.net/2.2.1/css/dataTables.dataTables.css">
+      <link rel="stylesheet" href="https://cdn.datatables.net/buttons/3.2.0/css/buttons.dataTables.css">
+
+      <!-- Main CSS -->
+      <link rel="stylesheet" href="assets/css/style.css">
+      <!-- Layout JS -->
+      <script src="assets/js/layout.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+   </head>
+   <body class="mini-sidebar">
+      <!-- Main Wrapper -->
+      <div class="main-wrapper">
+         <!-- Header -->
+         <div class="header header-one">
+            <a href="index.html"  class="d-inline-flex d-sm-inline-flex align-items-center d-md-inline-flex d-lg-none align-items-center device-logo">
+            <img src="assets/img/logo-small.png" class="img-fluid logo2" alt="Logo" style="width:50px">
+            </a>
+            <div class="main-logo d-inline float-start d-lg-flex align-items-center d-none d-sm-none d-md-none">
+               <div class="logo-color">
+                  <a href="index.html">
+                  <div class="d-flex gap-2 align-items-center">
+                     <img src="assets/img/logo-small.png" class="img-fluid logo-blue" alt="Logo" style="width:50px !important"> 
+                     
+                  </div>
+                  </a>
+                  <a href="index.html">
+                  <img src="assets/img/logo-small.png" class="img-fluid logo-small" alt="Logo">
+                  </a>
+               </div>
+            </div>
+            <!-- Sidebar Toggle -->
+            <a href="javascript:void(0);" id="toggle_btn">
+            <span class="toggle-bars">
+            <span class="bar-icons"></span>
+            <span class="bar-icons"></span>
+            <span class="bar-icons"></span>
+            <span class="bar-icons"></span>
+            </span>
+            </a>
+            <!-- /Sidebar Toggle -->
+            <!-- Search -->
+            <div class="top-nav-search">
+               <div class="d-flex align-items-center"> 
+                  <img src="assets/img/logo-small.png" class="img-fluid" alt="ÉchoTerra Logo" style="max-width: 50px;">
+                            <h4 class="logo-text">Djibah SeaBid</h4>
+                           </div>
+            </div>
+            <!-- /Search -->
+            <!-- Mobile Menu Toggle -->
+            <a class="mobile_btn" id="mobile_btn">
+            <i class="fas fa-bars"></i>
+            </a>
+            <!-- /Mobile Menu Toggle -->
+            <!-- Header Menu -->
+            <ul class="nav nav-tabs user-menu">
+              
+              
+               <div class="d-flex align-items-center">   
+
+                    
+
+                     <!-- Language Dropdown -->
+                     <div class="nav-item dropdown has-arrow flag-nav me-2">
+                        <a class="btn btn-menubar" data-bs-toggle="dropdown" href="javascript:void(0);" role="button" aria-expanded="false">
+                           <img src="assets/img/flags/us.svg" alt="Language" class="img-fluid">
+                        </a>
+                        <ul class="dropdown-menu p-2" style="">
+
+                           <!-- item-->
+                           <li>
+                              <a href="javascript:void(0);" class="dropdown-item">
+                                 <img src="assets/img/flags/us.svg" alt="flag" class="me-2">English
+                              </a>
+                           </li>
+
+                           
+
+                           <!-- item-->
+                           <li>
+                              <a href="javascript:void(0);" class="dropdown-item">
+                                 <img src="assets/img/flags/fr.svg" alt="flag" class="me-2">French
+                              </a>
+                           </li>
+
+                           <!-- item-->
+                           <li>
+                              <a href="javascript:void(0);" class="dropdown-item">
+                                 <img src="assets/img/flags/ae.svg" alt="flag" class="me-2">Arabic
+                              </a>
+                           </li>
+
+                        </ul>
+                     </div>
+
+                     <!-- Notification -->
+                     <div class="notification_item me-3">
+                        <a href="#" class="btn btn-menubar position-relative" id="notification_popup" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                           <i class="bi bi-bell"></i>
+                           <span class="position-absolute badge bg-success border border-white"></span>
+                        </a>
+                        <div class="dropdown-menu p-0 dropdown-menu-end dropdown-menu-lg" style="min-height: 300px;">
+                     
+                           <div class="p-2 border-bottom">
+                              <div class="row align-items-center">
+                                 <div class="col">
+                                    <h6 class="m-0 fs-16 fw-semibold"> Notifications</h6>
+                                 </div>
+                                 <div class="col-auto">
+                                    <div class="dropdown">
+                                       <a href="#" class="dropdown-toggle drop-arrow-none link-dark" data-bs-toggle="dropdown" data-bs-offset="0,15" aria-expanded="false">
+                                          <i class="isax isax-setting-2 fs-16 text-body align-middle"></i>
+                                       </a>
+                                       <div class="dropdown-menu dropdown-menu-end">
+                                          <!-- item-->
+                                          <a href="javascript:void(0);" class="dropdown-item"><i class="ti ti-bell-check me-1"></i>Mark as Read</a>
+                                          <!-- item-->
+                                          <a href="javascript:void(0);" class="dropdown-item"><i class="ti ti-trash me-1"></i>Delete All</a>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                           
+                           <!-- Notification Dropdown -->
+                           <div class="notification-body position-relative z-2 rounded-0 simplebar-scrollable-y" data-simplebar="init"><div class="simplebar-wrapper" style="margin: 0px;"><div class="simplebar-height-auto-observer-wrapper"><div class="simplebar-height-auto-observer"></div></div><div class="simplebar-mask"><div class="simplebar-offset" style="right: 0px; bottom: 0px;"><div class="simplebar-content-wrapper" tabindex="0" role="region" aria-label="scrollable content" style="height: auto; overflow: hidden scroll;"><div class="simplebar-content" style="padding: 0px;">
+                            
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-1">
+                                 <div class="d-flex">
+                                    <div class="me-2 position-relative flex-shrink-0">
+                                       <img src="assets/img/profiles/avatar-05.jpg" class="avatar-md rounded-circle" alt="User Img">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 fw-semibold text-dark">John Smith</p>
+                                       <p class="mb-1 text-wrap fs-14">
+                                          A <span class="fw-semibold">new sale</span> has been recorded.
+                                       </p>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>4 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-1">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                        
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-2">
+                                 <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                       <div class="avatar-sm me-2">
+                                           <span class="avatar-title bg-soft-info text-info fs-18 rounded-circle">
+                                               D
+                                           </span>
+                                       </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 fw-semibold text-dark">Donoghue Susan</p>
+                                       <p class="mb-0 text-wrap fs-14">
+                                          Switched to a lower-tier package
+                                       </p>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>4 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-2">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-3">
+                                 <div class="d-flex">
+                                    <div class="me-2 position-relative flex-shrink-0">
+                                       <img src="assets/img/profiles/avatar-03.jpg" class="avatar-md rounded-circle" alt="User Img">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 fw-semibold text-dark">Robert Fox </p>
+                                       <p class="mb-1 text-wrap fs-14">
+                                          Completed payment for <span class="fw-semibold">#INV00025</span>
+                                       </p>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>4 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-3">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-4">
+                                 <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                       <div class="avatar-sm me-2">
+                                          <span class="avatar-title bg-soft-warning text-warning fs-18 rounded-circle">
+                                             <i class="isax isax-message"></i>
+                                          </span>
+                                       </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 text-wrap fs-14">You have received <span class="fw-semibold">20</span> new messages in the conversation</p>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>3 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-4">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              <!-- Item-->
+                              <div class="dropdown-item notification-item py-2 text-wrap border-bottom" id="notification-5">
+                                 <div class="d-flex">
+                                    <div class="me-2 position-relative flex-shrink-0">
+                                       <img src="assets/img/profiles/avatar-17.jpg" class="avatar-md rounded-circle" alt="User Img">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                       <p class="mb-0 fw-semibold text-dark">Charlotte Brown</p>
+                                       <p class="mb-1 text-wrap fs-14">
+                                          New invoice generated <span class="fw-semibold"> #INV00028</span>
+                                       </p>
+                                       <div class="mb-1">
+                                          <a class="badge bg-success p-2 py-1 me-1" href="#">Approve</a>
+                                          <a class="badge bg-danger p-2 py-1" href="#">Deny</a>
+                                       </div>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                          <span class="fs-12"><i class="isax isax-clock me-1"></i>45 min ago</span>
+                                          <div class="notification-action d-flex align-items-center float-end gap-2">
+                                             <a href="javascript:void(0);" class="notification-read rounded-circle bg-info" data-bs-toggle="tooltip" title="" data-bs-original-title="Make as Read" aria-label="Make as Read"></a>
+                                             <button class="btn rounded-circle text-danger p-0" data-dismissible="#notification-5">
+                                                <i class="isax isax-close-circle fs-12"></i>
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                               
+                           </div></div></div></div><div class="simplebar-placeholder" style="width: 320px; height: 412px;"></div></div><div class="simplebar-track simplebar-horizontal" style="visibility: hidden;"><div class="simplebar-scrollbar" style="width: 0px; display: none;"></div></div><div class="simplebar-track simplebar-vertical" style="visibility: visible;"><div class="simplebar-scrollbar" style="height: 190px; transform: translate3d(0px, 0px, 0px); display: block;"></div></div></div>
+                           
+                           <!-- View All-->
+                           <div class="p-2 rounded-bottom border-top text-center">
+                              <a href="notifications.html" class="text-center fw-medium fs-14 mb-0">
+                                 View All
+                              </a>
+                           </div>
+                           
+                        </div>
+                     </div>
+
+                    
+
+                     <!-- User Dropdown -->
+                     <div class="dropdown profile-dropdown">
+                        <a href="javascript:void(0);" class="dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                           <span class="avatar online">
+                              <img src="assets/img/profiles/avatar-02.jpg" alt="Img" class="img-fluid rounded-circle">
+                           </span>
+                        </a>
+                        <div class="dropdown-menu p-2">
+                           <div class="d-flex align-items-center bg-light rounded-1 p-2 mb-2">
+                              <span class="avatar avatar-lg me-2">
+                                 <img src="assets/img/profiles/avatar-02.jpg" alt="img" class="rounded-circle">
+                              </span>
+                              <div>
+                                 <h6 class="fs-12 fw-medium mb-1">John Doe</h6>
+                                 <p class="fs-10">Seller</p>
+                              </div>
+                           </div>
+
+                           <!-- Item-->
+                           <a class="dropdown-item d-flex align-items-center" href="account-settings.html">
+                              <i class="isax isax-profile-circle me-2"></i>Profile Settings
+                           </a>
+
+
+
+                           <hr class="dropdown-divider my-2">
+
+                           <!-- Item-->
+                           <a class="dropdown-item logout d-flex align-items-center" href="login.html">
+                              <i class="isax isax-logout me-2"></i>Sign Out
+                           </a>
+                        </div>
+                     </div>
+
+                  </div>
+            </ul>
+            <!-- /Header Menu -->
+         </div>
+         <!-- /Header -->
+         <!-- Sidebar -->
+         <div class="sidebar" id="sidebar">
+            <div class="sidebar-inner slimscroll">
+               <div id="sidebar-menu" class="sidebar-menu">
+
+                  <ul class="sidebar-vertical">
+                     <li>
+                        <a href="dashboard.html"><i class="fe fe-home"></i> <span> Dashboard</span> </a>
+
+                     </li>
+                    <li>
+                        <a href="create-lot.html"><i class="bi bi-plus"></i> <span> Crete New Lot</span> </a>
+
+                     </li>
+                     <li>
+                        <a href="lot-list.html"><i class="bi bi-box"></i> <span> My Lot list</span> </a>
+
+                     </li>
+                     
+                     <li>
+                        <a href="active-auction.html"><i class="bi bi-hammer"></i> <span> Active Auction</span> </a>
+
+                     </li>
+
+                     <li>
+                        <a href="pending-validation.html"><i class="bi bi-hourglass-split"></i> <span> Lot Pending Validation</span> </a>
+
+                     </li>
+
+                     <li>
+                        <a href="approve-lots.html"><i class="bi bi-patch-check"></i> <span> Approved Lots</span> </a>
+
+                     </li>
+                     <li>
+                        <a href="sold-lots.html"><i class="bi bi-check-circle"></i> <span> Sold Lots</span> </a>
+
+                     </li>
+                    
+ 
+                     <li>
+                        <a href="revenue.html" class="active"><i class="bi bi-cash-coin"></i> <span> Revenue </span> </a>
+
+                     </li>
+                     <li>
+                        <a href="notifications.html"><i class="bi bi-bell"></i> <span> Notifications</span> </a>
+
+                     </li>
+                     <li>
+                        <a href="setting.html"><i class="bi bi-gear"></i> <span> Setting</span> </a>
+
+                     </li>
+
+                  </ul>   
+                     
+               </div>
+            </div>
+         </div>
+         <!-- /Sidebar -->
+
+<style>
+/* Financial Cards */
+.glass-card {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+}
+
+.main-balance-card {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(0, 255, 255, 0.05));
+    border-color: rgba(59, 130, 246, 0.4);
+}
+.progress{
+    width:100%;
+}
+/* Settlement List */
+.settlement-item {
+    background: rgba(255, 255, 255, 0.03);100%
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.settlement-item.pending {
+    border-left: 3px solid #ffc107;
+}
+
+.status-dot-success { height: 8px; width: 8px; background: #198754; border-radius: 50%; display: inline-block; }
+.status-dot-warning { height: 8px; width: 8px; background: #ffc107; border-radius: 50%; display: inline-block; }
+
+/* Form Elements */
+.glass-input-sm {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    color: white;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    outline: none;
+}
+
+.btn-glass-outline {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    color: white;
+    font-size: 0.8rem;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.border-white-10 { border-color: rgba(255, 255, 255, 0.1) !important; }
+    </style>
+
+
+<div class="page-wrapper">
+            <div class="content container-fluid">
+                   <div class="page-header">
+    <div class="row align-items-center">
+      <div class="col">
+        <h1 class="page-title text-white">Financial Summary (Revenue)</h1>
+        <p class="text-white">Detailed revenue breakdown and payment tracking</p>
+      </div>
+      <div class="col-auto">
+       <div class="d-flex gap-3">
+            <select class="glass-input-sm py-2 px-3">
+                <option>Last 6 Months</option>
+                <option>Last Year</option>
+                <option>All Time</option>
+            </select>
+            <button class="btn btn-outline-light btn-sm rounded-pill px-3"><i class="bi bi-download"></i> Export Report</button>
+        </div>
+       
+      </div>
+    </div>
+  </div>
+    
+    
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="glass main-balance-card p-4">
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="small">Net Payable (Balance)</span>
+                    <i class="bi bi-wallet2 text-info fs-4"></i>
+                </div>
+                <h2 class="display-6 fw-bold mb-1">$142,500.00</h2>
+                <span class="badge bg-success-subtle text-success small">Ready for Withdrawal</span>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="glass p-4">
+                <div class="row g-4 text-center">
+                    <div class="col-sm-3 border-end border-white-10">
+                        <small class=" d-block">Total Gross</small>
+                        <h4 class="fw-bold mb-0 mt-2 text-white">$1.2M</h4>
+                    </div>
+                    <div class="col-sm-3 border-end border-white-10">
+                        <small class=" d-block">Commission (5%)</small>
+                        <h4 class="fw-bold mb-0 mt-2 text-danger">-$60,000</h4>
+                    </div>
+                    <div class="col-sm-3 border-end border-white-10">
+                        <small class=" d-block">Payments Received</small>
+                        <h4 class="fw-bold mb-0 mt-2 text-success">$980,000</h4>
+                    </div>
+                    <div class="col-sm-3">
+                        <small class=" d-block">Payments Pending</small>
+                        <h4 class="fw-bold mb-0 mt-2 text-warning">$162,500</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-lg-8">
+            <div class="glass p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h6 class="fw-bold m-0">Monthly Sales vs Volume</h6>
+                    <div class="d-flex gap-3 small">
+                        <span><i class="bi bi-circle-fill text-info small"></i> Revenue ($)</span>
+                        <span><i class="bi bi-circle-fill text-warning small"></i> Volume (kg)</span>
+                    </div>
+                </div>
+                <div style="height: 350px;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="glass p-4 h-100">
+                <h6 class="fw-bold mb-4">Recent Settlements</h6>
+                <div class="settlement-list">
+                    <div class="settlement-item d-flex justify-content-between align-items-center p-3 mb-3">
+                        <div>
+                            <h6 class="mb-0 small fw-bold">LOT #8812 Settlement</h6>
+                            <small class="">March 02, 2026</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold text-success">+$12,400</div>
+                            <span class="status-dot-success"></span> Paid
+                        </div>
+                    </div>
+                    <div class="settlement-item d-flex justify-content-between align-items-center p-3 mb-3 pending">
+                        <div>
+                            <h6 class="mb-0 small fw-bold">LOT #8815 In-Transit</h6>
+                            <small class="">Feb 28, 2026</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold">$8,900</div>
+                            <span class="status-dot-warning"></span> Processing
+                        </div>
+                    </div>
+                    </div>
+                <button class="btn btn-glass-outline w-100 mt-2">View All Transactions</button>
+            </div>
+        </div>
+    </div>
+    <div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="glass p-4 text-center">
+            <div class="circular-progress-ui mb-3">
+                <span class="h4 fw-bold text-info">92%</span>
+            </div>
+            <h6 class="small  text-uppercase mb-3">Auction Success Rate</h6>
+            <p class="small mb-0">Lots Sold vs. Listed</p>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="glass p-4 text-center">
+            <div class="mb-3">
+                <i class="bi bi-hammer text-warning fs-1"></i>
+            </div>
+            <h6 class="small  text-uppercase">Avg. Bids Per Lot</h6>
+            <h4 class="fw-bold mb-0">14.5</h4>
+            <p class="text-success small">+12% vs last month</p>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="glass p-4">
+            <h6 class="small  text-uppercase text-white mb-3">Top Revenue Contributors</h6>
+            <div class="species-bar mb-2">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>Yellowfin Tuna</span>
+                    <span>$420k (45%)</span>
+                </div>
+                <div class="progress bg-dark" style="height: 6px;">
+                    <div class="progress-bar bg-info" style="width: 45%"></div>
+                </div>
+            </div>
+            <div class="species-bar mb-2">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>King Lobster</span>
+                    <span>$280k (30%)</span>
+                </div>
+                <div class="progress bg-dark" style="height: 6px;">
+                    <div class="progress-bar bg-primary" style="width: 30%"></div>
+                </div>
+            </div>
+            <div class="species-bar">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>Others</span>
+                    <span>$230k (25%)</span>
+                </div>
+                <div class="progress bg-dark" style="height: 6px;">
+                    <div class="progress-bar bg-secondary" style="width: 25%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="glass p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h6 class="fw-bold m-0">Detailed Auction Performance Log</h6>
+                <div class="search-box-glass">
+                  
+                    <input type="text" placeholder="Search Lot ID..." class="glass-input">
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="submitted-table">
+                    <thead>
+                        <tr class=" small">
+                            <th>LOT ID</th>
+                            <th>SPECIES</th>
+                            <th>QTY</th>
+                            <th>START PRICE</th>
+                            <th>FINAL PRICE</th>
+                            <th>BIDS</th>
+                            <th>PLATFORM FEE</th>
+                            <th>NET EARNED</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="table-row-glass">
+                            <td>#LOT-8821</td>
+                            <td>Yellowfin Tuna</td>
+                            <td>450kg</td>
+                            <td>$3,200</td>
+                            <td class="text-info fw-bold">$4,250</td>
+                            <td>28</td>
+                            <td class="text-danger">-$212.50</td>
+                            <td class="text-success fw-bold">$4,037.50</td>
+                            <td><span class="status-pill success">Settled</span></td>
+                        </tr>
+                        <tr class="table-row-glass">
+                            <td>#LOT-8815</td>
+                            <td>King Lobster</td>
+                            <td>50kg</td>
+                            <td>$2,000</td>
+                            <td class="text-info fw-bold">$2,800</td>
+                            <td>14</td>
+                            <td class="text-danger">-$140.00</td>
+                            <td class="text-success fw-bold">$2,660.00</td>
+                            <td><span class="status-pill warning">Pending</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+</div>
+</div>
+ <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" data-cfasync="false"></script>
+
+    
+      <!-- jQuery -->
+      <script src="assets/js/jquery-3.7.1.min.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Bootstrap Core JS -->
+      <script src="assets/js/bootstrap.bundle.min.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Feather Icon JS -->
+      <script src="assets/js/feather.min.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Slimscroll JS -->
+      <script src="assets/plugins/slimscroll/jquery.slimscroll.min.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Theme Settings JS -->
+      <script src="assets/js/theme-settings.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <script src="assets/js/greedynav.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <!-- Custom JS -->
+      <script src="assets/js/script.js" type="0e2fa082a2170f67f9b374b7-text/javascript"></script>
+      <script src="cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="0e2fa082a2170f67f9b374b7-|49" defer></script>
+<script>
+    // Analytics Chart
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
+            datasets: [
+                {
+                    label: 'Revenue ($)',
+                    data: [85000, 120000, 150000, 110000, 190000, 210000],
+                    backgroundColor: 'rgba(0, 208, 132, 0.6)',
+                    borderColor: '#00ff88',
+                    borderWidth: 1,
+                    borderRadius: 5,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Volume (kg)',
+                    data: [1200, 1800, 2200, 1600, 2500, 2800],
+                    type: 'line',
+                    borderColor: '#ffc107',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear', position: 'left',
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: 'rgba(255,255,255,0.5)' }
+                },
+                y1: {
+                    type: 'linear', position: 'right',
+                    grid: { display: false },
+                    ticks: { color: 'rgba(255,193,7,0.5)' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: 'rgba(255,255,255,0.5)' }
+                }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+</script>
+
+</body>
+</html>
+
+
