@@ -8,7 +8,7 @@
               <div class="page-header">
     <div class="row align-items-center">
       <div class="col">
-        <h1 class="page-title text-white">Create New Lot</h1>
+        <h1 class="page-title text-white">{{ $isEditMode ? 'Edit Lot' : 'Create New Lot' }}</h1>
         <p class="text-white">Seller Auction Management &amp; Perform Optimization</p>
       </div>
       <div class="col-auto">
@@ -19,8 +19,11 @@
   </div>
           
    <div class="glass p-4 p-md-5">
-            <form method="POST" action="{{ route('seller.store-lot') }}" id="createLotForm" enctype="multipart/form-data" novalidate>
+            <form method="POST" action="{{ $isEditMode ? route('seller.update-lot', $lot->id) : route('seller.store-lot') }}" id="createLotForm" enctype="multipart/form-data" novalidate>
                 @csrf
+                @if($isEditMode)
+                    @method('PUT')
+                @endif
 
                 @if(session('success'))
                     <div class="alert alert-success">
@@ -31,7 +34,7 @@
                 <div class="row g-4 mb-5">
                     <div class="col-12">
                         <label class="form-label small ">Lot Title</label>
-                        <input type="text" class="glass-input @error('title') is-invalid @enderror" placeholder="Enter lot name" name="title" value="{{ old('title') }}" minlength="3" maxlength="255">
+                        <input type="text" class="glass-input @error('title') is-invalid @enderror" placeholder="Enter lot name" name="title" value="{{ old('title', $lot->title) }}" minlength="3" maxlength="255">
                         @error('title')
                             <div class="invalid-feedback text-danger d-block">{{ $message }}</div>
                         @enderror
@@ -42,9 +45,14 @@
                         <div class="upload-dropzone" onclick="document.getElementById('productImage').click()">
                             <input type="file" id="productImage" hidden name="product_image">
                             <i class="bi bi-cloud-arrow-up fs-2"></i>
-                            <p class="mb-0 text-white">Drag and drop or click to upload fish image</p>
+                            <p class="mb-0 text-white">{{ $isEditMode ? 'Click to replace fish image' : 'Drag and drop or click to upload fish image' }}</p>
                             <small class="opacity-50 text-white">PNG, JPG up to 5MB</small>
                         </div>
+                        @if($isEditMode && $lot->image_url)
+                            <div class="mt-3">
+                                <img src="{{ $lot->image_url }}" class="prod-img" alt="{{ $lot->title ?? 'Lot image' }}">
+                            </div>
+                        @endif
                         @error('product_image')
                             <div class="invalid-feedback text-danger d-block">{{ $message }}</div>
                         @enderror
@@ -52,7 +60,7 @@
 
                     <div class="col-md-6">
                         <label class="form-label small ">Species / Common Name</label>
-                        <input type="text" class="glass-input @error('species') is-invalid @enderror" placeholder="e.g. Yellowfin Tuna" name="species" value="{{ old('species') }}" maxlength="255">
+                        <input type="text" class="glass-input @error('species') is-invalid @enderror" placeholder="e.g. Yellowfin Tuna" name="species" value="{{ old('species', $lot->species) }}" maxlength="255">
                         @error('species')
                             <div class="invalid-feedback text-danger d-block">{{ $message }}</div>
                         @enderror
@@ -61,7 +69,7 @@
                     <div class="col-md-3">
                         <label class="form-label small ">Quantity (kg)</label>
                         <div class="input-group-glass">
-                            <input type="number" class="glass-input @error('quantity') is-invalid @enderror" placeholder="0.00" name="quantity" step="0.01" min="0" value="{{ old('quantity') }}">
+                            <input type="number" class="glass-input @error('quantity') is-invalid @enderror" placeholder="0.00" name="quantity" step="0.01" min="0" value="{{ old('quantity', $lot->quantity) }}">
                             @error('quantity')
                                 <div class="invalid-feedback text-danger d-block">{{ $message }}</div>
                             @enderror
@@ -73,7 +81,7 @@
                         <label class="form-label small ">Starting Price ($)</label>
                         <div class="input-group-glass">
                             <span class="unit-text">$</span>
-                            <input type="number" class="glass-input @error('starting_price') is-invalid @enderror" placeholder="0.00" name="starting_price" step="0.01" min="0" value="{{ old('starting_price') }}">
+                            <input type="number" class="glass-input @error('starting_price') is-invalid @enderror" placeholder="0.00" name="starting_price" step="0.01" min="0" value="{{ old('starting_price', $lot->starting_price) }}">
                             @error('starting_price')
                                 <div class="invalid-feedback text-danger d-block">{{ $message }}</div>
                             @enderror
@@ -85,14 +93,14 @@
                 <div class="row g-4 mb-5">
                     <div class="col-md-6">
                         <label class="form-label small ">Harvest Date</label>
-                        <input type="date" class="glass-input @error('harvest_date') is-invalid @enderror" name="harvest_date" value="{{ old('harvest_date') }}">
+                        <input type="date" class="glass-input @error('harvest_date') is-invalid @enderror" name="harvest_date" value="{{ old('harvest_date', optional($lot->harvest_date)->format('Y-m-d')) }}">
                         @error('harvest_date')
                             <div class="invalid-feedback text-danger d-block">{{ $message }}</div>
                         @enderror
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small ">Storage Temp (°C)</label>
-                        <input type="text" class="glass-input @error('storage_temperature') is-invalid @enderror" placeholder="e.g. -18°C" name="storage_temperature" value="{{ old('storage_temperature') }}" maxlength="50">
+                        <input type="text" class="glass-input @error('storage_temperature') is-invalid @enderror" placeholder="e.g. -18°C" name="storage_temperature" value="{{ old('storage_temperature', $lot->storage_temperature) }}" maxlength="50">
                         @error('storage_temperature')
                             <div class="invalid-feedback text-danger d-block">{{ $message }}</div>
                         @enderror
@@ -107,6 +115,9 @@
                                 <div class="invalid-feedback text-danger d-block">{{ $message }}</div>
                             @enderror
                         </div>
+                        @if($isEditMode && $lot->health_certificate_path)
+                            <small class="text-white d-block mt-2">Current file attached</small>
+                        @endif
                     </div>
 
                     <div class="col-md-6">
@@ -118,12 +129,15 @@
                                 <div class="invalid-feedback text-danger d-block">{{ $message }}</div>
                             @enderror
                         </div>
+                        @if($isEditMode && $lot->documents_path)
+                            <small class="text-white d-block mt-2">Current file attached</small>
+                        @endif
                     </div>
                 </div>
 
                 <div class="col-12 mb-5">
                     <label class="form-label small ">Lot Notes / Descriptions</label>
-                    <textarea class="glass-input @error('notes') is-invalid @enderror" rows="4" placeholder="Mention grade details, handling info, etc." name="notes">{{ old('notes') }}</textarea>
+                    <textarea class="glass-input @error('notes') is-invalid @enderror" rows="4" placeholder="Mention grade details, handling info, etc." name="notes">{{ old('notes', $lot->notes) }}</textarea>
                     @error('notes')
                         <div class="invalid-feedback text-danger d-block">{{ $message }}</div>
                     @enderror
@@ -134,7 +148,7 @@
                         <i class="bi bi-shield-check text-success fs-4"></i>
                         <span class="small opacity-50">Verified Seller QC Protocol Applied</span>
                     </div>
-                    <button type="submit" class="btn btn-primary shadow-lg">Submit for QC Review</button>
+                    <button type="submit" class="btn btn-primary shadow-lg">{{ $isEditMode ? 'Update Lot' : 'Submit for QC Review' }}</button>
                 </div>
             </form>
         </div>

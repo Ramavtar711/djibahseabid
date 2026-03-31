@@ -1,666 +1,664 @@
-﻿
-   
-     @include('bid_admin.admin.include.header')
-    
-    @include('bid_admin.admin.include.side_menu')
-    
-    <!-- Page Wrapper -->
-         <div class="page-wrapper dashboard-page">
-            <div class="content container-fluid">
-              <style>
-                 .dashboard-page .content.container-fluid{
-                    padding-top: 10px !important;
-                 }
+@include('bid_admin.admin.include.header')
+@include('bid_admin.admin.include.side_menu')
 
-                 .dashboard-page .status-header{
-                    margin-top: 0 !important;
-                 }
-              </style>
-              
-              <div class="status-header d-flex flex-wrap justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-4">
-            <div class="small"><i class="bi bi-circle-fill text-success me-1"></i> SYSTEM STATUS: <strong>LIVE</strong></div>
-            <div class="small"><i class="bi bi-circle-fill text-danger me-1"></i> <strong>6</strong> Live Auctions</div>
-            <div class="small"><i class="bi bi-circle-fill text-warning me-1"></i> <strong>3</strong> Upcoming</div>
-            <div class="small"><i class="bi bi-circle-fill text-success me-1"></i> <strong>$12,450</strong> Revenue Today</div>
-        </div>
-        <div class="fw-bold">48 <span class="text-muted fw-normal">Buyers Online</span></div>
-    </div>
-    <div class="row g-3">
-        <div class="col-md-3">
-            <div class="card p-3 kpi-card">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <p class="text-muted mb-1 small uppercase fw-bold">Active Auctions</p>
-                        <h3 class="fw-bold mb-0">142</h3>
-                        <span class="trend-up"><i data-lucide="trending-up" class="d-inline" style="width:14px"></i> +12%</span>
-                    </div>
-                    <div class="icon-box bg-primary-soft"><i class="bi bi-hourglass-bottom" style="font-size:20px"></i></div>
-                </div>
+<div class="page-wrapper dashboard-page">
+    <div class="content container-fluid">
+        <style>
+            .dashboard-page .content.container-fluid { padding-top: 10px !important; }
+            .dashboard-page { background: transparent; }
+            .dashboard-page .content.container-fluid {
+                background:
+                    linear-gradient(135deg, rgba(5, 145, 215, 0.12), rgba(23, 120, 191, 0.08)),
+                    radial-gradient(circle at top left, rgba(255,255,255,0.15), transparent 30%);
+                border-radius: 24px;
+            }
+            .status-strip {
+                background: linear-gradient(135deg, rgba(13, 95, 149, 0.72), rgba(24, 126, 188, 0.58));
+                border: 1px solid rgba(255,255,255,.12);
+                border-radius: 18px;
+                padding: 14px 22px;
+                box-shadow: 0 18px 40px rgba(8, 57, 94, 0.16);
+                backdrop-filter: blur(8px);
+            }
+            .status-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 999px;
+                display: inline-block;
+                margin-right: 8px;
+                box-shadow: 0 0 0 3px rgba(255,255,255,.08);
+            }
+            .status-pill {
+                color: #f8fbff;
+                font-size: 15px;
+                font-weight: 600;
+                display: inline-flex;
+                align-items: center;
+                white-space: nowrap;
+            }
+            .status-pill strong,
+            .buyers-online-pill strong {
+                color: #ffffff;
+                font-weight: 800;
+            }
+            .buyers-online-pill {
+                color: #ffffff;
+                font-size: 17px;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+            .auction-slider { display:flex; gap:16px; overflow-x:auto; padding-bottom:10px; scroll-behavior:smooth; }
+            .auction-item { min-width:260px; max-width:260px; flex:0 0 auto; }
+            .metric-card, .dashboard-card, .small-card, .revenue-card {
+                background: rgba(248, 251, 255, 0.88);
+                border-radius: 22px;
+                box-shadow: 0 16px 35px rgba(15,23,42,.08);
+                border: 1px solid rgba(255,255,255,.45);
+                backdrop-filter: blur(10px);
+            }
+            .dashboard-card,
+            .revenue-card {
+                padding: 22px;
+            }
+            .metric-card {
+                padding: 16px 18px;
+                min-height: 140px;
+            }
+            .metric-card.danger-outline {
+                border: 2px solid #ff4b5c;
+            }
+            .metric-card .icon-box {
+                width: 58px;
+                height: 58px;
+                border-radius: 18px;
+                display:inline-flex;
+                align-items:center;
+                justify-content:center;
+                font-size: 24px;
+            }
+            .metric-label {
+                color: #0f172a;
+                font-size: 14px;
+                font-weight: 700;
+                margin-bottom: 8px;
+            }
+            .metric-value {
+                font-size: 20px;
+                line-height: 1.1;
+                font-weight: 800;
+                color: #25124d;
+                margin-bottom: 4px;
+            }
+            .metric-change {
+                font-size: 15px;
+                font-weight: 700;
+            }
+            .metric-note {
+                font-size: 15px;
+                color: #0f172a;
+            }
+            .small-card { padding:18px; height:100%; }
+            .rank-item { display:flex; justify-content:space-between; gap:16px; padding:10px 0; border-bottom:1px solid rgba(148,163,184,.18); }
+            .rank-item:last-child { border-bottom:0; padding-bottom:0; }
+            .rank-number { display:inline-flex; width:28px; height:28px; align-items:center; justify-content:center; border-radius:999px; background:#dbeafe; color:#1d4ed8; font-weight:700; margin-right:8px; }
+            .section-title {
+                font-size: 17px;
+                font-weight: 800;
+                color: #1d0f49;
+                margin-bottom: 0;
+            }
+            .section-title span {
+                color: #111827;
+                font-weight: 500;
+            }
+            .header-icon-btn {
+                width: 40px;
+                height: 40px;
+                border-radius: 999px;
+                border: 1px solid rgba(15,23,42,.08);
+                background: rgba(255,255,255,.72);
+                color: #9ca3af;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .header-dots-btn {
+                border: 0;
+                background: transparent;
+                color: #4b5563;
+                font-size: 22px;
+                line-height: 1;
+                padding: 0 4px;
+            }
+            .auction-stage-card {
+                background: rgba(255,255,255,.92);
+                border: 1px solid rgba(12, 74, 110, .08);
+                border-radius: 18px;
+                padding: 8px;
+                box-shadow: 0 10px 24px rgba(15,23,42,.08);
+            }
+            .auction-stage-card .card-body {
+                padding: 10px 6px 6px;
+            }
+            .live-badge {
+                border-radius: 999px;
+                background: #ff5a67;
+                color: #fff;
+                font-size: 11px;
+                font-weight: 800;
+                padding: 6px 12px;
+                box-shadow: 0 8px 16px rgba(255, 90, 103, 0.32);
+            }
+            .alert-item {
+                display: flex;
+                gap: 14px;
+                align-items: flex-start;
+                padding: 14px 0;
+                border-bottom: 1px solid rgba(148,163,184,.18);
+            }
+            .alert-item:last-child {
+                border-bottom: 0;
+                padding-bottom: 0;
+            }
+            .alert-icon-wrap {
+                width: 34px;
+                height: 34px;
+                border-radius: 999px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+            .alert-title {
+                font-size: 14px;
+                font-weight: 800;
+                margin-bottom: 2px;
+            }
+            .alert-message {
+                font-size: 13px;
+                color: #111827;
+                margin-bottom: 0;
+            }
+            .alert-time {
+                color: #111827;
+                font-size: 14px;
+                font-weight: 500;
+                white-space: nowrap;
+            }
+        </style>
+
+        <div class="status-strip d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <div class="d-flex flex-wrap align-items-center gap-4">
+                <div class="status-pill"><span id="systemStatusDot" class="status-dot {{ $systemStatus === 'LIVE' ? 'bg-success' : 'bg-secondary' }}"></span>SYSTEM STATUS: <strong id="systemStatusText" class="ms-1">{{ $systemStatus }}</strong></div>
+                <div class="status-pill"><span class="status-dot bg-danger"></span><strong id="liveAuctionsTop">{{ $liveAuctionsCount }}</strong><span class="ms-1">Live Auctions</span></div>
+                <div class="status-pill"><span class="status-dot bg-warning"></span><strong id="upcomingAuctionsTop">{{ $upcomingAuctionsCount }}</strong><span class="ms-1">Upcoming</span></div>
+                <div class="status-pill"><span class="status-dot bg-success"></span><strong id="revenueTodayTop">${{ number_format($revenueToday, 2) }}</strong><span class="ms-1">Revenue Today</span></div>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card p-3 kpi-card">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <p class="text-muted mb-1 small fw-bold">Gross Revenue</p>
-                        <h3 class="fw-bold mb-0">$1.2M</h3>
-                        <span class="trend-up">+8.4%</span>
-                    </div>
-                    <div class="icon-box bg-success text-white"><i class="bi bi-currency-dollar" style="font-size:20px"></i></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card p-3 kpi-card">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <p class="text-muted mb-1 small fw-bold">Volume Sold</p>
-                        <h3 class="fw-bold mb-0">42.5 <span class="fs-6 fw-normal">tons</span></h3>
-                        <span class="trend-up">+5.2%</span>
-                    </div>
-                    <div class="icon-box bg-warning text-white"><i class="bi bi-box" style="font-size:20px"></i></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card p-3 kpi-card border-start border-danger border-4">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <p class="text-muted mb-1 small fw-bold">Ending Soon (24h)</p>
-                        <h3 class="fw-bold mb-0 text-danger">18</h3>
-                        <span class="small text-muted">High priority</span>
-                    </div>
-                    <div class="icon-box bg-danger-subtle text-danger"><i class="bi bi-clock" style="font-size:20px"></i></div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-lg-8">
-            
-            <div class="dashboard-card p-3 pb-0">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold mb-0">Live Auctions <span class="text-muted fw-normal">Control Center</span></h6>
-                    <div class="d-flex align-items-center gap-2">
-                        <button class="btn btn-sm btn-light border" onclick="scrollSlider(-300)"><i class="bi bi-chevron-left"></i></button>
-                        <button class="btn btn-sm btn-light border" onclick="scrollSlider(300)"><i class="bi bi-chevron-right"></i></button>
-                        <i class="bi bi-three-dots text-muted ms-2"></i>
-                    </div>
-                </div>
-
-                <div class="auction-slider" id="auctionSlider">
-                    <div class="auction-item">
-                        <div class="card p-2 position-relative pb-0 mb-0">
-                            <span class="badge badge-live position-absolute m-2 top-0 start-0">â— LIVE</span>
-                            <img src="https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?auto=format&fit=crop&w=400&h=250" class="card-img-top rounded" alt="Tuna">
-                            <div class="card-body px-1 py-2">
-                                <p class="mb-0 fw-bold">Lot #12 Yellowfin Tuna</p>
-                                <small class="text-muted">Hanani Market</small>
-                                <div class="d-flex justify-content-between mt-2 small">
-                                    <span class="text-muted">Current Bid</span>
-                                    <span class="fw-bold">$210/kg</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-3 small">
-                                    <span class="text-muted">Quantity</span>
-                                    <span class="badge bg-light text-dark border">120 kg <span class="text-warning ms-1">22:31</span></span>
-                                </div>
-                                <div class="btn-group w-100 btn-action-group">
-                                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-pause-fill"></i></button>
-                                    <button class="btn btn-primary btn-sm w-100">Extend 5m</button>
-                                    <button class="btn btn-danger btn-sm"><i class="bi bi-x-lg"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="auction-item">
-                        <div class="card p-2 position-relative pb-0 mb-0">
-                            <span class="badge badge-live position-absolute m-2 top-0 start-0">â— LIVE</span>
-                            <img src="https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?auto=format&fit=crop&w=400&h=250" class="card-img-top rounded" alt="Sardines">
-                            <div class="card-body px-1 py-2">
-                                <p class="mb-0 fw-bold">Lot #8 Sardines</p>
-                                <small class="text-muted">Creata Ltd</small>
-                                <div class="d-flex justify-content-between mt-2 small">
-                                    <span class="text-muted">Current Bid</span>
-                                    <span class="fw-bold">$55/kg</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-3 small">
-                                    <span class="text-muted">Quantity</span>
-                                    <span class="badge bg-light text-dark border">11 kg <span class="text-danger ms-1">1:15</span></span>
-                                </div>
-                                <div class="btn-group w-100 btn-action-group">
-                                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-pause-fill"></i></button>
-                                    <button class="btn btn-primary btn-sm w-100">Extend 5m</button>
-                                    <button class="btn btn-danger btn-sm"><i class="bi bi-x-lg"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="auction-item">
-                        <div class="card p-2 position-relative pb-0 mb-0">
-                            <span class="badge badge-live position-absolute m-2 top-0 start-0">â— LIVE</span>
-                            <img src="https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?auto=format&fit=crop&w=400&h=250" class="card-img-top rounded" alt="Squid">
-                            <div class="card-body px-1 py-2">
-                                <p class="mb-0 fw-bold">Lot #15 Squid</p>
-                                <small class="text-muted">SIDAL CLEM</small>
-                                <div class="d-flex justify-content-between mt-2 small">
-                                    <span class="text-muted">Current Bid</span>
-                                    <span class="fw-bold">$182/kg</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-3 small">
-                                    <span class="text-muted">Quantity</span>
-                                    <span class="badge bg-light text-dark border">90 kg <span class="text-warning ms-1">3:42</span></span>
-                                </div>
-                                <div class="btn-group w-100 btn-action-group">
-                                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-pause-fill"></i></button>
-                                    <button class="btn btn-primary btn-sm w-100">Extend 5m</button>
-                                    <button class="btn btn-danger btn-sm"><i class="bi bi-x-lg"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="auction-item">
-                        <div class="card p-2 position-relative pb-0 mb-0">
-                            <span class="badge badge-live position-absolute m-2 top-0 start-0">â— LIVE</span>
-                            <img src="https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?auto=format&fit=crop&w=400&h=250" class="card-img-top rounded" alt="Tuna">
-                            <div class="card-body px-1 py-2">
-                                <p class="mb-0 fw-bold">Lot #12 Yellowfin Tuna</p>
-                                <small class="text-muted">Hanani Market</small>
-                                <div class="d-flex justify-content-between mt-2 small">
-                                    <span class="text-muted">Current Bid</span>
-                                    <span class="fw-bold">$210/kg</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-3 small">
-                                    <span class="text-muted">Quantity</span>
-                                    <span class="badge bg-light text-dark border">120 kg <span class="text-warning ms-1">22:31</span></span>
-                                </div>
-                                <div class="btn-group w-100 btn-action-group">
-                                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-pause-fill"></i></button>
-                                    <button class="btn btn-primary btn-sm w-100">Extend 5m</button>
-                                    <button class="btn btn-danger btn-sm"><i class="bi bi-x-lg"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="auction-item">
-                        <div class="card p-2 position-relative pb-0 mb-0">
-                            <span class="badge badge-live position-absolute m-2 top-0 start-0">â— LIVE</span>
-                            <img src="https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?auto=format&fit=crop&w=400&h=250" class="card-img-top rounded" alt="Squid">
-                            <div class="card-body px-1 py-2">
-                                <p class="mb-0 fw-bold">Lot #15 Squid</p>
-                                <small class="text-muted">SIDAL CLEM</small>
-                                <div class="d-flex justify-content-between mt-2 small">
-                                    <span class="text-muted">Current Bid</span>
-                                    <span class="fw-bold">$182/kg</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-3 small">
-                                    <span class="text-muted">Quantity</span>
-                                    <span class="badge bg-light text-dark border">90 kg <span class="text-warning ms-1">3:42</span></span>
-                                </div>
-                                <div class="btn-group w-100 btn-action-group">
-                                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-pause-fill"></i></button>
-                                    <button class="btn btn-primary btn-sm w-100">Extend 5m</button>
-                                    <button class="btn btn-danger btn-sm"><i class="bi bi-x-lg"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-         
-<div class="card-custom mb-4">
-
-
-
-<div class="row">
-<div class="col-md-6">
-<div>
-<div class="title">Fish Volume <span class="sub">6.90 â€¢ 44 Granting</span></div>
-</div>
-<div class="card shadow-sm p-2">
-<canvas id="volumeChart" height="60" width="100%"></canvas>
-</div>
-</div>
-
-<div class="col-md-6">
-   <div>
-<div class="title">Transaction Overview <span class="sub">6.90 â€¢ 44 Granting</span></div>
-</div>
-   <div class="card shadow-sm p-2">
-<canvas id="transactionChart" height="60" width="100%"></canvas>
-</div>
-</div>
-</div>
-
-</div>
-
-<!-- Analytics -->
-<div class="card-custom">
-
-
-<div class="row g-4">
-         <!-- LEFT SIDE -->
-         <div class="col-lg-12">
-            <div class="analytics-wrapper">
-               <div class="d-flex justify-content-between align-items-center mb-3">
-                  <div class="section-title">
-                     Analytics & Reports
-                  </div>
-                  <div>
-                     <button class="filter-btn">Today</button> <button class="filter-btn">This Week</button> <button class="filter-btn">This Month</button> <button class="filter-btn">Custom</button>
-                  </div>
-               </div>
-               <div class="row g-3">
-                  <!-- Fish Volume Card -->
-                  <div class="col-md-6">
-                     <div class="small-card">
-                        <div class="card-title">
-                           Fish Volume
-                        </div>
-                        <div class="rank-item">
-                           <div>
-                              <span class="rank-number">#1</span> SIDAL CLEM
-                           </div>
-                           <div>
-                              45
-                           </div>
-                        </div>
-                        <div class="rank-item">
-                           <div>
-                              <span class="rank-number">#2</span> Hanani Market
-                           </div>
-                           <div>
-                              40
-                           </div>
-                        </div>
-                        <div class="rank-item mb-0">
-                           <div>
-                              <span class="rank-number">#3</span> Everfish Co.
-                           </div>
-                           <div>
-                              35
-                           </div>
-                        </div>
-                     </div>
-                  </div><!-- Transaction Value Card -->
-                  <div class="col-md-6">
-                     <div class="small-card">
-                        <div class="card-title">
-                           Transaction Value ($)
-                        </div>
-                        <div class="rank-item">
-                           <div>
-                              <span class="rank-number">#1</span> Yellowfin Tuna
-                           </div>
-                           <div class="d-flex align-items-center" style="width:40%;">
-                              <div class="progress w-100">
-                                 <div class="progress-bar blue" style="width:70%"></div>
-                              </div><span class="percent">0.29%</span>
-                           </div>
-                        </div>
-                        <div class="rank-item">
-                           <div>
-                              <span class="rank-number">#2</span> Sardines
-                           </div>
-                           <div class="d-flex align-items-center" style="width:40%;">
-                              <div class="progress w-100">
-                                 <div class="progress-bar orange" style="width:40%"></div>
-                              </div><span class="percent">2.23%</span>
-                           </div>
-                        </div>
-                        <div class="rank-item mb-0">
-                           <div>
-                              <span class="rank-number">#3</span> Grouper
-                           </div>
-                           <div class="d-flex align-items-center" style="width:40%;">
-                              <div class="progress w-100">
-                                 <div class="progress-bar blue" style="width:55%"></div>
-                              </div><span class="percent">1.10%</span>
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </div><!-- RIGHT SIDE Revenue -->
-          <div class="col-lg-12">
-         <div class="revenue-card">
-               <div class="d-flex justify-content-between align-items-center mb-3">
-                  <div class="section-title">
-                     Revenue Trend
-                  </div>
-                  <div style="font-size:20px;">
-                     â‹¯
-                  </div>
-               </div>
-               <canvas height="110" id="revenueChart"></canvas>
-            </div>
-         </div>
-      </div>
-
-
-
-</div>   
+            <div class="buyers-online-pill"><strong id="registeredBuyersCount">{{ number_format($registeredBuyersCount) }}</strong> Buyers Online</div>
         </div>
 
-        
-   
-
-               
-
-
-   
-
-
-
-<!-- RIGHT SIDE -->
-<div class="col-lg-4">
- <div class="dashboard-card card p-3">
-                <div class="d-flex justify-content-between mb-3">
-                    <h6 class="fw-bold">Alert Center</h6>
-                    <i class="bi bi-three-dots"></i>
-                </div>
-                <div class="d-flex gap-2 mb-3 align-items-start">
-                    <div class="rounded-circle bg-danger-subtle p-1 px-2"><i class="bi bi-lightning-fill text-danger"></i></div>
-                    <div class="flex-grow-1">
-                        <p class="mb-0 small fw-bold text-danger">SERVER LAG</p>
-                        <small class="text-muted">High latency detected!</small>
-                    </div>
-                    <small class="text-muted">2m</small>
-                </div>
-                <div class="d-flex gap-2 mb-3 align-items-start">
-                    <div class="rounded-circle bg-danger-subtle p-1 px-2"><i class="bi bi-exclamation-triangle-fill text-warning"></i></div>
-                    <div class="flex-grow-1">
-                        <p class="mb-0 small fw-bold">NO BIDS</p>
-                        <small class="text-muted">Lot #8 has no bids for 5 min</small>
-                    </div>
-                    <small class="text-muted">4m</small>
-                </div>
-                <div class="d-flex gap-2 mb-3 align-items-start">
-                    <div class="rounded-circle bg-danger-subtle p-1 px-2"><i class="bi bi-exclamation-triangle-fill text-danger"></i></div>
-                    <div class="flex-grow-1">
-                        <p class="mb-0 small fw-bold">PAYMENT FAILED</p>
-                        <small class="text-muted">Lot #8 has no bids for 5 min</small>
-                    </div>
-                    <small class="text-muted">4m</small>
-                </div>
-
-                <div class="d-flex gap-2 mb-3 align-items-start">
-                    <div class="rounded-circle bg-danger-subtle p-1 px-2"><i class="bi bi-exclamation-triangle-fill text-warning"></i></div>
-                    <div class="flex-grow-1">
-                        <p class="mb-0 small fw-bold">QC PENDING</p>
-                        <small class="text-muted">Lot #8 has no bids for 5 min</small>
-                    </div>
-                    <small class="text-muted">4m</small>
-                </div>
-                <hr>
-                <div class="text-center"><a href="#" class="text-decoration-none small">View All <i class="bi bi-chevron-right"></i></a></div>
-            </div>  
-
-<div class="dashboard-card card p-3">
-                <h6 class="fw-bold mb-3">Upcoming Auctions</h6>
-                <div class="border rounded p-3 mb-3 bg-light bg-opacity-25">
-                    <div class="d-flex gap-3 align-items-center mb-3">
-                        <img src="https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?auto=format&fit=crop&w=400&h=250" class="rounded" alt="Fish" style="width: 60px; height: 60px;">
+        <div class="row g-3 mb-4">
+            <div class="col-md-6 col-xl-3">
+                <div class="metric-card">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
                         <div>
-                            <small class="text-muted d-block">Lot #2 King Fish</small>
-                            <h4 class="fw-bold mb-0">01:20:00</h4>
+                            <div class="metric-label">Active Auctions</div>
+                            <div id="metricLiveAuctions" class="metric-value">{{ $liveAuctionsCount }}</div>
+                            <div class="metric-change text-success">+12%</div>
                         </div>
-                    </div>
-                    <div class="small mb-2 text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i> GG: Approved</div>
-                    <button class="btn btn-primary w-100 py-2 fw-bold">Launch Now</button>
-                </div>
-                
-                
-            </div>
- <div class="dashboard-card card p-3">
-   <div class="d-flex justify-content-between mb-3">
-                    <h6 class="fw-bold">ðŸ† Top Buyers</h6>
-                    <i class="bi bi-three-dots"></i>
-                </div>
-            
-            <div class="card-body p-0">
-                <div class="list-group list-group-flush">
-                    <div class="list-group-item p-3 border-0 border-bottom">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-primary-soft rounded-circle p-3 me-3">
-                                    <i class="bi bi-building" style="width: 20px;"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-0 fw-bold">Oceanic Foods Ltd</h6>
-                                    <small class="text-muted"><i data-lucide="map-pin" class="d-inline" style="width:12px"></i> Japan</small>
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <div class="fw-bold text-success">$240,500</div>
-                                <small class="text-muted">5.2 tons Â· 42 Wins</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="list-group-item p-3 border-0 border-bottom">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-primary-soft rounded-circle p-3 me-3">
-                                    <i class="bi bi-building" style="width: 20px;"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-0 fw-bold">Global Catch Co.</h6>
-                                    <small class="text-muted"><i data-lucide="map-pin" class="d-inline" style="width:12px"></i> USA</small>
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <div class="fw-bold text-success">$185,200</div>
-                                <small class="text-muted">3.8 tons Â· 31 Wins</small>
-                            </div>
-                        </div>
+                        <div class="icon-box bg-primary text-white"><i class="bi bi-hourglass-split"></i></div>
                     </div>
                 </div>
             </div>
-            
+            <div class="col-md-6 col-xl-3">
+                <div class="metric-card">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <div class="metric-label">Gross Revenue</div>
+                            <div id="metricGrossRevenue" class="metric-value">${{ number_format($grossRevenue, 2) }}</div>
+                            <div class="metric-change text-success">+8.4%</div>
+                        </div>
+                        <div class="icon-box bg-success text-white"><i class="bi bi-currency-dollar"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="metric-card">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <div class="metric-label">Volume Sold</div>
+                            <div class="metric-value"><span id="metricVolumeSold">{{ number_format($volumeSoldKg, 2) }}</span> <span class="fs-6 fw-normal">kg</span></div>
+                            <div class="metric-change text-success">+5.2%</div>
+                        </div>
+                        <div class="icon-box bg-warning text-white"><i class="bi bi-box-seam"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="metric-card danger-outline">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <div class="metric-label">Ending Soon (24h)</div>
+                            <div id="metricEndingSoon" class="metric-value text-danger">{{ $endingSoonCount }}</div>
+                            <div class="metric-note">High priority</div>
+                        </div>
+                        <div class="icon-box bg-danger-subtle text-danger"><i class="bi bi-clock-history"></i></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-  <div class="dashboard-card card p-3">
-   <div class="d-flex justify-content-between mb-3">
-                    <h6 class="fw-bold">âš“ Top Sellers</h6>
-                    <i class="bi bi-three-dots"></i>
-                </div>
-           
-            <div class="card-body p-0">
-                <div class="list-group list-group-flush">
-                    <div class="list-group-item p-3 border-0 border-bottom">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <h6 class="mb-0 fw-bold">Atlantic Blue Fin</h6>
-                                <small class="text-muted">Value: <span class="text-dark fw-bold">$380,000</span></small>
-                            </div>
-                            <div class="text-end">
-                                <span class="badge bg-success-subtle text-success">93% Success</span>
-                            </div>
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="dashboard-card mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="section-title">Live Auctions <span>Control Center</span></h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <small id="dashboardRefreshState" class="text-muted">Auto refresh on</small>
+                            <button class="header-icon-btn" onclick="scrollSlider(-300)"><i class="bi bi-chevron-left"></i></button>
+                            <button class="header-icon-btn" onclick="scrollSlider(300)"><i class="bi bi-chevron-right"></i></button>
+                            <button class="header-dots-btn" type="button">...</button>
                         </div>
-                        <div class="row g-0 align-items-center">
-                            <div class="col-12">
-                                <div class="progress mb-1" style="height: 4px;">
-                                    <div class="progress-bar bg-success" style="width: 93%"></div>
+                    </div>
+                    <div class="auction-slider" id="auctionSlider">
+                        @forelse($activeLots as $lot)
+                            <div class="auction-item">
+                                <div class="auction-stage-card position-relative mb-0">
+                                    <span class="live-badge position-absolute m-2 top-0 start-0">LIVE</span>
+                                    <img src="{{ $lot['image_url'] }}" class="card-img-top rounded" alt="{{ $lot['title'] ?? 'Lot image' }}" style="height:170px;object-fit:cover;">
+                                    <div class="card-body px-1 py-2">
+                                        <p class="mb-0 fw-bold">Lot #{{ $lot['id'] }} {{ $lot['species'] ?: ($lot['title'] ?? 'Auction Lot') }}</p>
+                                        <small class="text-muted">{{ $lot['seller_name'] }}</small>
+                                        <div class="d-flex justify-content-between mt-2 small"><span class="text-muted">Current Bid</span><span class="fw-bold">${{ number_format($lot['current_bid'], 2) }}/kg</span></div>
+                                        <div class="d-flex justify-content-between small"><span class="text-muted">Bids</span><span class="fw-bold">{{ $lot['bids_count'] }}</span></div>
+                                        <div class="d-flex justify-content-between mb-3 small"><span class="text-muted">Quantity</span><span class="badge bg-light text-dark border">{{ number_format($lot['quantity'], 2) }} kg <span class="{{ $lot['time_left_class'] }} ms-1">{{ $lot['time_left_label'] }}</span></span></div>
+                                        <a class="btn btn-primary btn-sm w-100" href="{{ route('admin.live-auction') }}">Open Live Auction</a>
+                                    </div>
                                 </div>
-                                <div class="d-flex justify-content-between small text-muted">
-                                    <span>Listed: 8.5t</span>
-                                    <span>Sold: 7.9t</span>
-                                </div>
+                            </div>
+                        @empty
+                            <div class="text-muted py-4">No live auctions available right now.</div>
+                        @endforelse
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6"><div class="dashboard-card p-3"><div class="fw-bold mb-3">Fish Volume <span class="text-muted fw-normal small">Last 7 days sold quantity</span></div><canvas id="volumeChart" height="110"></canvas></div></div>
+                    <div class="col-md-6"><div class="dashboard-card p-3"><div class="fw-bold mb-3">Transaction Overview <span class="text-muted fw-normal small">Settlements vs bids</span></div><canvas id="transactionChart" height="110"></canvas></div></div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="small-card">
+                            <div class="fw-bold mb-2">Top Species by Volume</div>
+                            <div id="topSpeciesByVolumeList">
+                                @forelse($topSpeciesByVolume as $index => $item)
+                                    <div class="rank-item"><div><span class="rank-number">#{{ $index + 1 }}</span>{{ $item['species'] ?: 'Unknown Species' }}</div><div>{{ number_format($item['total_quantity'], 2) }} kg</div></div>
+                                @empty
+                                    <div class="text-muted">No sold lots yet.</div>
+                                @endforelse
                             </div>
                         </div>
                     </div>
-                    <div class="list-group-item p-3 border-0 border-bottom">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <h6 class="mb-0 fw-bold">DeepSea Trawlers</h6>
-                                <small class="text-muted">Value: <span class="text-dark fw-bold">$210,400</span></small>
-                            </div>
-                            <div class="text-end">
-                                <span class="badge bg-warning-subtle text-warning">82% Success</span>
-                            </div>
-                        </div>
-                        <div class="row g-0 align-items-center">
-                            <div class="col-12">
-                                <div class="progress mb-1" style="height: 4px;">
-                                    <div class="progress-bar bg-warning" style="width: 82%"></div>
-                                </div>
-                                <div class="d-flex justify-content-between small text-muted">
-                                    <span>Listed: 6.2t</span>
-                                    <span>Sold: 5.1t</span>
-                                </div>
+                    <div class="col-md-6">
+                        <div class="small-card">
+                            <div class="fw-bold mb-2">Top Species by Value</div>
+                            <div id="topSpeciesByValueList">
+                                @forelse($topSpeciesByValue as $index => $item)
+                                    @php
+                                        $maxValue = max((float) (collect($topSpeciesByValue)->max('total_amount') ?: 1), 1);
+                                        $width = round(($item['total_amount'] / $maxValue) * 100);
+                                    @endphp
+                                    <div class="rank-item">
+                                        <div><span class="rank-number">#{{ $index + 1 }}</span>{{ $item['species'] ?: 'Unknown Species' }}</div>
+                                        <div class="d-flex align-items-center" style="width:42%;"><div class="progress w-100 me-2"><div class="progress-bar bg-primary" style="width: {{ $width }}%"></div></div><span class="small">${{ number_format($item['total_amount'], 0) }}</span></div>
+                                    </div>
+                                @empty
+                                    <div class="text-muted">No settlement data yet.</div>
+                                @endforelse
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <div class="revenue-card p-3"><div class="d-flex justify-content-between align-items-center mb-3"><div class="fw-bold">Revenue Trend</div><div class="small text-muted">Last 7 days</div></div><canvas id="revenueChart" height="110"></canvas></div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="dashboard-card mb-4">
+                    <div class="d-flex justify-content-between mb-3 align-items-center"><h6 class="section-title">Alert Center</h6><button class="header-dots-btn" type="button">...</button></div>
+                    <div id="alertsList">
+                        @foreach($alerts as $alert)
+                            <div class="alert-item">
+                                <div class="alert-icon-wrap bg-{{ $alert['tone'] }}-subtle"><i class="bi {{ $alert['icon'] }} text-{{ $alert['tone'] }}"></i></div>
+                                <div class="flex-grow-1">
+                                    <p class="alert-title text-{{ $alert['tone'] }}">{{ strtoupper($alert['title']) }}</p>
+                                    <p class="alert-message">{{ $alert['message'] }}</p>
+                                </div>
+                                <span class="alert-time">{{ $alert['time'] }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="dashboard-card p-3 mb-4">
+                    <h6 class="fw-bold mb-3">Upcoming Auctions</h6>
+                    <div id="upcomingLotsList">
+                        @forelse($upcomingLots as $lot)
+                            <div class="border rounded p-3 mb-3 bg-light bg-opacity-25">
+                                <div class="d-flex gap-3 align-items-center mb-3">
+                                    <img src="{{ $lot['image_url'] }}" class="rounded" alt="{{ $lot['title'] ?? 'Fish' }}" style="width:60px;height:60px;object-fit:cover;">
+                                    <div><small class="text-muted d-block">Lot #{{ $lot['id'] }} {{ $lot['species'] ?: ($lot['title'] ?? 'Auction Lot') }}</small><h4 class="fw-bold mb-0">{{ $lot['starts_in_label'] }}</h4></div>
+                                </div>
+                                <div class="small mb-2 text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i> {{ strtoupper($lot['status'] ?? 'scheduled auction') }}</div>
+                                <a href="{{ route('admin.upcoming-auction') }}" class="btn btn-primary w-100 py-2 fw-bold">View Schedule</a>
+                            </div>
+                        @empty
+                            <div class="text-muted">No upcoming auctions scheduled.</div>
+                        @endforelse
+                    </div>
+                </div>
+
+                <div class="dashboard-card p-3 mb-4">
+                    <div class="d-flex justify-content-between mb-3"><h6 class="fw-bold">Top Buyers</h6><i class="bi bi-people"></i></div>
+                    <div id="topBuyersList">
+                        @forelse($topBuyers as $buyer)
+                            <div class="border-bottom py-3">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div><h6 class="mb-0 fw-bold">{{ $buyer['name'] }}</h6><small class="text-muted">{{ $buyer['country'] ?: 'Country not set' }}</small></div>
+                                    <div class="text-end"><div class="fw-bold text-success">${{ number_format($buyer['total_amount'], 2) }}</div><small class="text-muted">{{ number_format($buyer['total_quantity'], 2) }} kg · {{ $buyer['wins_count'] }} Wins</small></div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-muted">No buyer performance data yet.</div>
+                        @endforelse
+                    </div>
+                </div>
+
+                <div class="dashboard-card p-3">
+                    <div class="d-flex justify-content-between mb-3"><h6 class="fw-bold">Top Sellers</h6><i class="bi bi-award"></i></div>
+                    <div id="topSellersList">
+                        @forelse($topSellers as $seller)
+                            <div class="border-bottom py-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div><h6 class="mb-0 fw-bold">{{ $seller['name'] }}</h6><small class="text-muted">Value: <span class="text-dark fw-bold">${{ number_format($seller['total_amount'], 2) }}</span></small></div>
+                                    <span class="badge {{ $seller['success_rate'] >= 85 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning' }}">{{ $seller['success_rate'] }}% Success</span>
+                                </div>
+                                <div class="progress mb-1" style="height:4px;"><div class="progress-bar {{ $seller['success_rate'] >= 85 ? 'bg-success' : 'bg-warning' }}" style="width: {{ $seller['success_rate'] }}%"></div></div>
+                                <div class="d-flex justify-content-between small text-muted"><span>Listed: {{ number_format($seller['listed_quantity'], 2) }} kg</span><span>Sold: {{ number_format($seller['sold_quantity'], 2) }} kg</span></div>
+                            </div>
+                        @empty
+                            <div class="text-muted">No seller performance data yet.</div>
+                        @endforelse
                     </div>
                 </div>
             </div>
-           
         </div>
-
- 
-
+    </div>
 </div>
-</div>
-</div>
-
-              
-              
-            </div>
-         </div>
-         <!-- /Page Wrapper -->
-      </div>
-      <!-- /Main Wrapper -->
- 
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" data-cfasync="false"></script>
-
-    
-      <!-- jQuery -->
-      <!-- Bootstrap Core JS -->
-      <!-- Feather Icon JS -->
-      <!-- Slimscroll JS -->
-      <!-- Theme Settings JS -->
-      <!-- Custom JS -->
-      <script>
-
-// Volume Bar
-new Chart(document.getElementById("volumeChart"),{
-type:"bar",
-data:{
-labels:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
-datasets:[{
-data:[1500,1400,1300,1600,1700,2000,2200],
-backgroundColor:"#4e73df",
-borderRadius:6
-}]
-},
-options:{plugins:{legend:{display:false}}}
-});
-
-// Transaction Mixed Chart
-new Chart(document.getElementById("transactionChart"),{
-data:{
-labels:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
-datasets:[
-{
-type:"bar",
-data:[800,1000,1500,1200,2000,2500,3000],
-backgroundColor:"#a0c4ff",
-borderRadius:6
-},
-{
-type:"line",
-data:[600,900,1300,1500,2200,2700,3200],
-borderColor:"#4e73df",
-tension:0.4,
-fill:false
-}
-]
-},
-options:{plugins:{legend:{display:false}}}
-});
-
-// Revenue Line
-new Chart(document.getElementById("revenueChart"),{
-type:"line",
-data:{
-labels:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
-datasets:[{
-data:[2000,2300,2500,2800,3000,3400,3700],
-borderColor:"#4e73df",
-backgroundColor:"rgba(78,115,223,0.1)",
-fill:true,
-tension:0.4
-}]
-},
-options:{
-plugins:{legend:{display:false}},
-scales:{x:{display:false},y:{display:false}}
-}
-});
-
-</script>
 <script>
-    function scrollSlider(amount) {
-        const slider = document.getElementById('auctionSlider');
-        slider.scrollBy({
-            left: amount,
-            behavior: 'smooth'
-        });
+function scrollSlider(amount) {
+    const slider = document.getElementById('auctionSlider');
+    if (slider) slider.scrollBy({ left: amount, behavior: 'smooth' });
+}
+
+function formatMoney(value) {
+    return '$' + Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatNumber(value, decimals = 0) {
+    return Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+const liveAuctionUrl = @json(route('admin.live-auction'));
+const upcomingAuctionUrl = @json(route('admin.upcoming-auction'));
+const dashboardDataUrl = @json(route('admin.dashboard.data'));
+
+let volumeChart;
+let transactionChart;
+let revenueChart;
+let refreshInFlight = false;
+
+const initialDashboardData = {
+    chartLabels: @json($chartLabels),
+    volumeChartData: @json($volumeChartData),
+    transactionBarData: @json($transactionBarData),
+    transactionLineData: @json($transactionLineData),
+    revenueChartData: @json($revenueChartData)
+};
+
+function renderActiveLots(activeLots) {
+    const slider = document.getElementById('auctionSlider');
+    if (!slider) return;
+
+    if (!activeLots.length) {
+        slider.innerHTML = '<div class="text-muted py-4">No live auctions available right now.</div>';
+        return;
     }
-</script>
-<script>
-    // Initialize Lucide Icons
-    lucide.createIcons();
 
-    // 1. Revenue Chart (Line)
-    new Chart(document.getElementById('revenueChart'), {
-        type: 'line',
-        data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-            datasets: [{
-                label: 'Revenue (USD)',
-                data: [400000, 550000, 480000, 700000, 850000, 1200000],
-                borderColor: '#4338ca',
-                tension: 0.4,
-                fill: true,
-                backgroundColor: 'rgba(67, 56, 202, 0.1)'
-            }]
-        },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
-    });
+    slider.innerHTML = activeLots.map((lot) => `
+        <div class="auction-item">
+            <div class="auction-stage-card position-relative mb-0">
+                <span class="live-badge position-absolute m-2 top-0 start-0">LIVE</span>
+                <img src="${escapeHtml(lot.image_url || '')}" class="card-img-top rounded" alt="${escapeHtml(lot.title || 'Lot image')}" style="height:170px;object-fit:cover;">
+                <div class="card-body px-1 py-2">
+                    <p class="mb-0 fw-bold">Lot #${escapeHtml(lot.id)} ${escapeHtml(lot.species || lot.title || 'Auction Lot')}</p>
+                    <small class="text-muted">${escapeHtml(lot.seller_name || 'Seller')}</small>
+                    <div class="d-flex justify-content-between mt-2 small"><span class="text-muted">Current Bid</span><span class="fw-bold">${formatMoney(lot.current_bid)}/kg</span></div>
+                    <div class="d-flex justify-content-between small"><span class="text-muted">Bids</span><span class="fw-bold">${formatNumber(lot.bids_count)}</span></div>
+                    <div class="d-flex justify-content-between mb-3 small"><span class="text-muted">Quantity</span><span class="badge bg-light text-dark border">${formatNumber(lot.quantity, 2)} kg <span class="${escapeHtml(lot.time_left_class || 'text-success')} ms-1">${escapeHtml(lot.time_left_label || 'Live')}</span></span></div>
+                    <a class="btn btn-primary btn-sm w-100" href="${liveAuctionUrl}">Open Live Auction</a>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
 
-    // 2. Species Chart (Doughnut)
-    new Chart(document.getElementById('speciesChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Tuna', 'Salmon', 'Cod', 'Shrimp'],
-            datasets: [{
-                data: [45, 25, 20, 10],
-                backgroundColor: ['#4338ca', '#10b981', '#f59e0b', '#64748b']
-            }]
-        },
-        options: { maintainAspectRatio: false }
-    });
+function renderAlerts(alerts) {
+    document.getElementById('alertsList').innerHTML = alerts.map((alert) => `
+        <div class="alert-item">
+            <div class="alert-icon-wrap bg-${escapeHtml(alert.tone || 'info')}-subtle"><i class="bi ${escapeHtml(alert.icon || 'bi-info-circle-fill')} text-${escapeHtml(alert.tone || 'info')}"></i></div>
+            <div class="flex-grow-1">
+                <p class="alert-title text-${escapeHtml(alert.tone || 'info')}">${escapeHtml((alert.title || '').toUpperCase())}</p>
+                <p class="alert-message">${escapeHtml(alert.message || '')}</p>
+            </div>
+            <span class="alert-time">${escapeHtml(alert.time || 'Live')}</span>
+        </div>
+    `).join('');
+}
 
-    // 3. Fresh vs Frozen Chart (Bar)
-    new Chart(document.getElementById('priceEvolutionChart'), {
-        type: 'bar',
-        data: {
-            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-            datasets: [
-                { label: 'Fresh', data: [12, 15, 14, 18], backgroundColor: '#10b981' },
-                { label: 'Frozen', data: [8, 9, 7, 10], backgroundColor: '#64748b' }
-            ]
-        },
-        options: { maintainAspectRatio: false }
-    });
+function renderUpcomingLots(upcomingLots) {
+    const container = document.getElementById('upcomingLotsList');
+    if (!upcomingLots.length) {
+        container.innerHTML = '<div class="text-muted">No upcoming auctions scheduled.</div>';
+        return;
+    }
+
+    container.innerHTML = upcomingLots.map((lot) => `
+        <div class="border rounded p-3 mb-3 bg-light bg-opacity-25">
+            <div class="d-flex gap-3 align-items-center mb-3">
+                <img src="${escapeHtml(lot.image_url || '')}" class="rounded" alt="${escapeHtml(lot.title || 'Fish')}" style="width:60px;height:60px;object-fit:cover;">
+                <div><small class="text-muted d-block">Lot #${escapeHtml(lot.id)} ${escapeHtml(lot.species || lot.title || 'Auction Lot')}</small><h4 class="fw-bold mb-0">${escapeHtml(lot.starts_in_label || 'Scheduled')}</h4></div>
+            </div>
+            <div class="small mb-2 text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i> ${escapeHtml((lot.status || 'scheduled auction').toUpperCase())}</div>
+            <a href="${upcomingAuctionUrl}" class="btn btn-primary w-100 py-2 fw-bold">View Schedule</a>
+        </div>
+    `).join('');
+}
+
+function renderSpeciesVolume(items) {
+    const container = document.getElementById('topSpeciesByVolumeList');
+    if (!items.length) {
+        container.innerHTML = '<div class="text-muted">No sold lots yet.</div>';
+        return;
+    }
+
+    container.innerHTML = items.map((item, index) => `
+        <div class="rank-item"><div><span class="rank-number">#${index + 1}</span>${escapeHtml(item.species || 'Unknown Species')}</div><div>${formatNumber(item.total_quantity, 2)} kg</div></div>
+    `).join('');
+}
+
+function renderSpeciesValue(items) {
+    const container = document.getElementById('topSpeciesByValueList');
+    if (!items.length) {
+        container.innerHTML = '<div class="text-muted">No settlement data yet.</div>';
+        return;
+    }
+
+    const maxValue = Math.max(...items.map((item) => Number(item.total_amount || 0)), 1);
+
+    container.innerHTML = items.map((item, index) => `
+        <div class="rank-item">
+            <div><span class="rank-number">#${index + 1}</span>${escapeHtml(item.species || 'Unknown Species')}</div>
+            <div class="d-flex align-items-center" style="width:42%;"><div class="progress w-100 me-2"><div class="progress-bar bg-primary" style="width: ${Math.round((Number(item.total_amount || 0) / maxValue) * 100)}%"></div></div><span class="small">${formatMoney(item.total_amount).replace('.00', '')}</span></div>
+        </div>
+    `).join('');
+}
+
+function renderTopBuyers(items) {
+    const container = document.getElementById('topBuyersList');
+    if (!items.length) {
+        container.innerHTML = '<div class="text-muted">No buyer performance data yet.</div>';
+        return;
+    }
+
+    container.innerHTML = items.map((buyer) => `
+        <div class="border-bottom py-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div><h6 class="mb-0 fw-bold">${escapeHtml(buyer.name || 'Buyer')}</h6><small class="text-muted">${escapeHtml(buyer.country || 'Country not set')}</small></div>
+                <div class="text-end"><div class="fw-bold text-success">${formatMoney(buyer.total_amount)}</div><small class="text-muted">${formatNumber(buyer.total_quantity, 2)} kg · ${formatNumber(buyer.wins_count)} Wins</small></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderTopSellers(items) {
+    const container = document.getElementById('topSellersList');
+    if (!items.length) {
+        container.innerHTML = '<div class="text-muted">No seller performance data yet.</div>';
+        return;
+    }
+
+    container.innerHTML = items.map((seller) => `
+        <div class="border-bottom py-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div><h6 class="mb-0 fw-bold">${escapeHtml(seller.name || 'Seller')}</h6><small class="text-muted">Value: <span class="text-dark fw-bold">${formatMoney(seller.total_amount)}</span></small></div>
+                <span class="badge ${Number(seller.success_rate || 0) >= 85 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">${formatNumber(seller.success_rate)}% Success</span>
+            </div>
+            <div class="progress mb-1" style="height:4px;"><div class="progress-bar ${Number(seller.success_rate || 0) >= 85 ? 'bg-success' : 'bg-warning'}" style="width: ${formatNumber(seller.success_rate)}%"></div></div>
+            <div class="d-flex justify-content-between small text-muted"><span>Listed: ${formatNumber(seller.listed_quantity, 2)} kg</span><span>Sold: ${formatNumber(seller.sold_quantity, 2)} kg</span></div>
+        </div>
+    `).join('');
+}
+
+function applyDashboardData(data) {
+    document.getElementById('systemStatusText').textContent = data.systemStatus || 'STANDBY';
+    document.getElementById('systemStatusDot').className = `status-dot ${(data.systemStatus === 'LIVE') ? 'bg-success' : 'bg-secondary'}`;
+    document.getElementById('liveAuctionsTop').textContent = formatNumber(data.liveAuctionsCount);
+    document.getElementById('upcomingAuctionsTop').textContent = formatNumber(data.upcomingAuctionsCount);
+    document.getElementById('revenueTodayTop').textContent = formatMoney(data.revenueToday);
+    document.getElementById('registeredBuyersCount').textContent = formatNumber(data.registeredBuyersCount);
+    document.getElementById('metricLiveAuctions').textContent = formatNumber(data.liveAuctionsCount);
+    document.getElementById('metricGrossRevenue').textContent = formatMoney(data.grossRevenue);
+    document.getElementById('metricVolumeSold').textContent = formatNumber(data.volumeSoldKg, 2);
+    document.getElementById('metricEndingSoon').textContent = formatNumber(data.endingSoonCount);
+
+    renderActiveLots(data.activeLots || []);
+    renderAlerts(data.alerts || []);
+    renderUpcomingLots(data.upcomingLots || []);
+    renderSpeciesVolume(data.topSpeciesByVolume || []);
+    renderSpeciesValue(data.topSpeciesByValue || []);
+    renderTopBuyers(data.topBuyers || []);
+    renderTopSellers(data.topSellers || []);
+
+    if (volumeChart) {
+        volumeChart.data.labels = data.chartLabels || [];
+        volumeChart.data.datasets[0].data = data.volumeChartData || [];
+        volumeChart.update();
+    }
+
+    if (transactionChart) {
+        transactionChart.data.labels = data.chartLabels || [];
+        transactionChart.data.datasets[0].data = data.transactionBarData || [];
+        transactionChart.data.datasets[1].data = data.transactionLineData || [];
+        transactionChart.update();
+    }
+
+    if (revenueChart) {
+        revenueChart.data.labels = data.chartLabels || [];
+        revenueChart.data.datasets[0].data = data.revenueChartData || [];
+        revenueChart.update();
+    }
+}
+
+async function refreshDashboardData() {
+    if (refreshInFlight) return;
+    refreshInFlight = true;
+    document.getElementById('dashboardRefreshState').textContent = 'Syncing...';
+
+    try {
+        const response = await fetch(dashboardDataUrl, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load dashboard updates.');
+        }
+
+        const data = await response.json();
+        applyDashboardData(data);
+        document.getElementById('dashboardRefreshState').textContent = 'Live updates on';
+    } catch (error) {
+        document.getElementById('dashboardRefreshState').textContent = 'Auto refresh paused';
+        console.error(error);
+    } finally {
+        refreshInFlight = false;
+    }
+}
+
+volumeChart = new Chart(document.getElementById('volumeChart'), {
+    type: 'bar',
+    data: {
+        labels: initialDashboardData.chartLabels,
+        datasets: [{ data: initialDashboardData.volumeChartData, backgroundColor: '#4e73df', borderRadius: 6 }]
+    },
+    options: { plugins: { legend: { display: false } } }
+});
+
+transactionChart = new Chart(document.getElementById('transactionChart'), {
+    data: {
+        labels: initialDashboardData.chartLabels,
+        datasets: [
+            { type: 'bar', data: initialDashboardData.transactionBarData, backgroundColor: '#a0c4ff', borderRadius: 6 },
+            { type: 'line', data: initialDashboardData.transactionLineData, borderColor: '#4e73df', tension: 0.4, fill: false }
+        ]
+    },
+    options: { plugins: { legend: { display: false } } }
+});
+
+revenueChart = new Chart(document.getElementById('revenueChart'), {
+    type: 'line',
+    data: {
+        labels: initialDashboardData.chartLabels,
+        datasets: [{ data: initialDashboardData.revenueChartData, borderColor: '#4338ca', backgroundColor: 'rgba(67, 56, 202, 0.1)', fill: true, tension: 0.4 }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
+});
+
+setInterval(refreshDashboardData, 15000);
 </script>
 @include('bid_admin.admin.include.footer')
-
-
-
-
-
-

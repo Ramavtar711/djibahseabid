@@ -48,10 +48,10 @@
                            <span id="sellerNotificationMenuBadge" class="badge bg-success ms-auto" style="display:none;"></span>
                         </a>
                      </li>
-                     <li>
+                   <!--  <li>
                         <a href="#"><i class="bi bi-gear"></i> <span> Setting</span> </a>
 
-                     </li>
+                     </li> -->
 
                      
                      </ul>

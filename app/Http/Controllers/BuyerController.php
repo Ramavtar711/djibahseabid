@@ -18,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use App\Services\SettlementLifecycleService;
@@ -559,6 +560,49 @@ class BuyerController extends Controller
         return redirect()
             ->route('buyer.profile-settings')
             ->with('success', 'Profile updated successfully.');
+    }
+
+    public function changePassword(): View|RedirectResponse
+    {
+        $buyer = $this->getAuthenticatedBuyer();
+
+        if (! $buyer) {
+            return redirect()->route('home.login')->with('error', 'Please log in as a buyer to access password settings.');
+        }
+
+        return view('bid_web.buyer.change-password', [
+            'buyer' => $buyer,
+        ]);
+    }
+
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $buyer = $this->getAuthenticatedBuyer();
+
+        if (! $buyer) {
+            return redirect()->route('home.login')->with('error', 'Please log in as a buyer to update your password.');
+        }
+
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $passwordMatches = Hash::check($validated['current_password'], (string) $buyer->password)
+            || hash_equals((string) $buyer->password, $validated['current_password']);
+
+        if (! $passwordMatches) {
+            return back()->withErrors([
+                'current_password' => 'Current password is incorrect.',
+            ]);
+        }
+
+        $buyer->password = Hash::make($validated['new_password']);
+        $buyer->save();
+
+        return redirect()
+            ->route('buyer.change-password')
+            ->with('success', 'Password updated successfully.');
     }
 
     public function upcomingAuction(): View

@@ -1,3 +1,12 @@
+@php
+   $sellerSession = session('logged_user', []);
+   $sellerName = $sellerSession['name'] ?? 'Seller';
+   $sellerRole = ucfirst($sellerSession['type'] ?? 'seller');
+   $sellerAvatar = !empty($sellerSession['profile_image'])
+      ? asset('storage/' . ltrim($sellerSession['profile_image'], '/'))
+      : asset('seller/assets/img/profiles/avatar-02.jpg');
+@endphp
+
 <!DOCTYPE html>
 <html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="light"  data-sidebar-size="sm" data-sidebar-image="none">
    <head>
@@ -185,23 +194,28 @@
                      <div class="dropdown profile-dropdown">
                         <a href="javascript:void(0);" class="dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown" data-bs-auto-close="outside">
                            <span class="avatar online">
-                              <img src="{{ asset('seller/assets/img/profiles/avatar-02.jpg') }}" alt="Img" class="img-fluid rounded-circle">
+                              <img src="{{ $sellerAvatar }}" alt="Img" class="img-fluid rounded-circle">
                            </span>
                         </a>
                         <div class="dropdown-menu p-2">
                            <div class="d-flex align-items-center bg-light rounded-1 p-2 mb-2">
                               <span class="avatar avatar-lg me-2">
-                                 <img src="{{ asset('seller/assets/img/profiles/avatar-02.jpg') }}" alt="img" class="rounded-circle">
+                                 <img src="{{ $sellerAvatar }}" alt="img" class="rounded-circle">
                               </span>
                               <div>
-                                 <h6 class="fs-12 fw-medium mb-1">John doe</h6>
-                                 <p class="fs-10">Seller</p>
+                                 <h6 class="fs-12 fw-medium mb-1">{{ $sellerName }}</h6>
+                                 <p class="fs-10">{{ $sellerRole }}</p>
                               </div>
                            </div>
 
                            <!-- Item-->
-                           <a class="dropdown-item d-flex align-items-center" href="#">
+                           <a class="dropdown-item d-flex align-items-center" href="{{ route('seller.profile-settings') }}">
                               <i class="isax isax-profile-circle me-2"></i>Profile Settings
+                           </a>
+
+                           <!-- Item-->
+                           <a class="dropdown-item d-flex align-items-center" href="{{ route('seller.change-password') }}">
+                              <i class="isax isax-lock me-2"></i>Update Password
                            </a>
 
 

@@ -31,7 +31,12 @@ Route::post('/seller-register', [HomeController::class, 'sellerRegisterStore'])-
 Route::prefix('admin')->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('admin.index');
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/dashboard/data', [AdminController::class, 'dashboardData'])->name('admin.dashboard.data');
     Route::get('/live-auction', [AdminController::class, 'liveAuction'])->name('admin.live-auction');
+    Route::get('/live-auction/data', [AdminController::class, 'liveAuctionData'])->name('admin.live-auction.data');
+    Route::post('/live-auction/extend/{lot}', [AdminController::class, 'extendLiveAuction'])->name('admin.live-auction.extend');
+    Route::post('/live-auction/pause/{lot}', [AdminController::class, 'pauseLiveAuction'])->name('admin.live-auction.pause');
+    Route::post('/live-auction/stop/{lot}', [AdminController::class, 'stopLiveAuction'])->name('admin.live-auction.stop');
     Route::get('/upcoming-auction', [AdminController::class, 'upcomingAuction'])->name('admin.upcoming-auction');
     Route::get('/lot-management', [AdminController::class, 'lotManagement'])->name('admin.lot-management');
     Route::get('/create-lot', [AdminController::class, 'createLot'])->name('admin.create-lot');
@@ -44,6 +49,9 @@ Route::prefix('admin')->group(function () {
     Route::get('/add-seller', [AdminController::class, 'addSeller'])->name('admin.add-seller');
     Route::get('/finance-overview', [AdminController::class, 'financeOverview'])->name('admin.finance-overview');
     Route::get('/notifications', [AdminController::class, 'notifications'])->name('admin.notifications');
+    Route::get('/notifications/data', [AdminController::class, 'notificationData'])->name('admin.notifications.data');
+    Route::post('/notifications/mark-read', [AdminController::class, 'markNotificationRead'])->name('admin.notifications.mark-read');
+    Route::post('/notifications/mark-all-read', [AdminController::class, 'markAllNotificationsRead'])->name('admin.notifications.mark-all-read');
     Route::get('/account-settings', [AdminController::class, 'accountSettings'])->name('admin.account-settings');
     Route::get('/login', [AdminController::class, 'login'])->name('admin.login');
     Route::post('/login', [AdminController::class, 'loginStore'])->name('admin.login.store');
@@ -71,15 +79,25 @@ Route::prefix('qc')->group(function () {
     Route::post('/notifications/mark-all-read', [QcController::class, 'markAllNotificationsRead'])->name('qc.notifications.mark-all-read');
     Route::get('/permissions', [QcController::class, 'permissions'])->name('qc.permissions');
     Route::get('/account-settings', [QcController::class, 'accountSettings'])->name('qc.account-settings');
+    Route::post('/account-settings', [QcController::class, 'updateAccountSettings'])->name('qc.account-settings.update');
+    Route::get('/change-password', [QcController::class, 'changePassword'])->name('qc.change-password');
+    Route::post('/change-password', [QcController::class, 'updatePassword'])->name('qc.change-password.update');
     Route::get('/login', [QcController::class, 'login'])->name('qc.login');
 });
 
 Route::prefix('seller')->group(function () {
     Route::get('/', [SellerController::class, 'dashboard'])->name('seller.dashboard');
     Route::get('/dashboard', [SellerController::class, 'dashboard'])->name('seller.dashboard-page');
+    Route::get('/profile-settings', [SellerController::class, 'profileSettings'])->name('seller.profile-settings');
+    Route::post('/profile-settings', [SellerController::class, 'updateProfileSettings'])->name('seller.profile-settings.update');
+    Route::get('/change-password', [SellerController::class, 'changePassword'])->name('seller.change-password');
+    Route::post('/change-password', [SellerController::class, 'updatePassword'])->name('seller.change-password.update');
     Route::get('/create-lot', [SellerController::class, 'createLot'])->name('seller.create-lot');
     Route::post('/create-lot', [SellerController::class, 'storeLot'])->name('seller.store-lot');
     Route::get('/lot-list', [SellerController::class, 'lotList'])->name('seller.lot-list');
+    Route::get('/lot-edit/{lot}', [SellerController::class, 'editLot'])->name('seller.edit-lot');
+    Route::put('/lot-edit/{lot}', [SellerController::class, 'updateLot'])->name('seller.update-lot');
+    Route::delete('/lot-delete/{lot}', [SellerController::class, 'destroyLot'])->name('seller.delete-lot');
     Route::get('/lot-details/{lot?}', [SellerController::class, 'lotDetails'])->name('seller.lot-details');
     Route::get('/live-view', [SellerController::class, 'liveView'])->name('seller.live-view');
     Route::get('/active-auction', [SellerController::class, 'activeAuction'])->name('seller.active-auction');
@@ -101,6 +119,8 @@ Route::prefix('buyer')->group(function () {
     Route::get('/dashboard', [BuyerController::class, 'dashboard'])->name('buyer.dashboard-page');
     Route::get('/profile-settings', [BuyerController::class, 'profileSettings'])->name('buyer.profile-settings');
     Route::post('/profile-settings', [BuyerController::class, 'updateProfileSettings'])->name('buyer.profile-settings.update');
+    Route::get('/change-password', [BuyerController::class, 'changePassword'])->name('buyer.change-password');
+    Route::post('/change-password', [BuyerController::class, 'updatePassword'])->name('buyer.change-password.update');
     Route::get('/active-auction', [BuyerController::class, 'activeAuction'])->name('buyer.active-auction');
     Route::get('/upcoming-auction', [BuyerController::class, 'upcomingAuction'])->name('buyer.upcoming-auction');
     Route::get('/live-auction', [BuyerController::class, 'liveAuction'])->name('buyer.live-auction');

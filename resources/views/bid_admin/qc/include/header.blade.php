@@ -19,7 +19,17 @@
       <!-- Datatables CSS -->
       <link rel="stylesheet" href="https://cdn.datatables.net/2.2.1/css/dataTables.dataTables.css">
       <link rel="stylesheet" href="https://cdn.datatables.net/buttons/3.2.0/css/buttons.dataTables.css">
-
+@php
+   $qcSession = session('admin_user', []);
+   $qcName = $qcSession['name'] ?? 'QC User';
+   $qcEmail = $qcSession['email'] ?? '';
+   $qcRole = ucfirst($qcSession['role'] ?? 'qc');
+   $qcInitials = collect(explode(' ', trim($qcName)))
+      ->filter()
+      ->map(fn ($part) => strtoupper(substr($part, 0, 1)))
+      ->take(2)
+      ->implode('');
+@endphp
       <!-- Main CSS -->
       <link rel="stylesheet" href="{{ url('public/qc/assets/css/style.css') }}">
       <!-- Layout JS -->
@@ -185,23 +195,35 @@
                      <div class="dropdown profile-dropdown">
                         <a href="javascript:void(0);" class="dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown" data-bs-auto-close="outside">
                            <span class="avatar online">
-                              <img src="{{ url('public/qc/assets/img/profiles/avatar-01.jpg') }}" alt="Img" class="img-fluid rounded-circle">
+                              <span class="img-fluid rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold" style="width:40px;height:40px;background:linear-gradient(135deg,#22c1c3,#2563eb);">
+                                 {{ $qcInitials ?: 'QC' }}
+                              </span>
                            </span>
                         </a>
                         <div class="dropdown-menu p-2">
                            <div class="d-flex align-items-center bg-light rounded-1 p-2 mb-2">
                               <span class="avatar avatar-lg me-2">
-                                 <img src="{{ url('public/qc/assets/img/profiles/avatar-01.jpg') }}" alt="img" class="rounded-circle">
+                                 <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold" style="width:48px;height:48px;background:linear-gradient(135deg,#22c1c3,#2563eb);">
+                                    {{ $qcInitials ?: 'QC' }}
+                                 </span>
                               </span>
                               <div>
-                                 <h6 class="fs-12 fw-medium mb-1">Jafna Cremson</h6>
-                                 <p class="fs-10">Administrator</p>
+                                 <h6 class="fs-12 fw-medium mb-1">{{ $qcName }}</h6>
+                                 <p class="fs-10 mb-0">{{ $qcRole }}</p>
+                                 @if ($qcEmail)
+                                    <p class="fs-10 text-muted mb-0">{{ $qcEmail }}</p>
+                                 @endif
                               </div>
                            </div>
 
                            <!-- Item-->
                            <a class="dropdown-item d-flex align-items-center" href="{{ route('qc.account-settings') }}">
                               <i class="isax isax-profile-circle me-2"></i>Profile Settings
+                           </a>
+
+                           <!-- Item-->
+                           <a class="dropdown-item d-flex align-items-center" href="{{ route('qc.change-password') }}">
+                              <i class="isax isax-lock me-2"></i>Update Password
                            </a>
 
 

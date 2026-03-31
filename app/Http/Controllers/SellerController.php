@@ -8,12 +8,15 @@ use App\Models\AuctionMessage;
 use App\Models\Bid;
 use App\Models\Lot;
 use App\Models\Settlement;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class SellerController extends Controller
@@ -116,34 +119,143 @@ class SellerController extends Controller
 
     public function createLot(): View
     {
-        return view('bid_web.seller.create-lot');
+        return view('bid_web.seller.create-lot', [
+            'lot' => new Lot(),
+            'isEditMode' => false,
+        ]);
+    }
+
+    public function profileSettings(): View|RedirectResponse
+    {
+        $seller = $this->getAuthenticatedSeller();
+
+        if (! $seller) {
+            return redirect()->route('home.login')->with('error', 'Please log in as a seller to access your profile.');
+        }
+
+        return view('bid_web.seller.profile-settings', [
+            'seller' => $seller,
+            'profileOptions' => $this->sellerProfileOptions(),
+        ]);
+    }
+
+    public function updateProfileSettings(Request $request): RedirectResponse
+    {
+        $seller = $this->getAuthenticatedSeller();
+
+        if (! $seller) {
+            return redirect()->route('home.login')->with('error', 'Please log in as a seller to update your profile.');
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $seller->id],
+            'phone' => ['required', 'string', 'max:30'],
+            'profile_image' => ['nullable', 'image', 'max:5120'],
+            'company_name' => ['required', 'string', 'max:255'],
+            'landing_site_port' => ['required', 'string', 'max:255'],
+            'address' => ['required', 'string', 'max:500'],
+            'country' => ['required', 'string', 'max:100'],
+            'supply_type' => ['nullable', 'array'],
+            'supply_type.*' => ['string', 'max:50'],
+            'processing_status' => ['nullable', 'array'],
+            'processing_status.*' => ['string', 'max:50'],
+            'estimated_weekly_volume' => ['nullable', 'string', 'max:100'],
+            'trade_license_file' => ['nullable', 'file', 'max:5120'],
+            'facility_photos_file' => ['nullable', 'file', 'max:5120'],
+            'certificates_file' => ['nullable', 'file', 'max:5120'],
+        ]);
+
+        $seller->fill([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'company_name' => $validated['company_name'],
+            'landing_site_port' => $validated['landing_site_port'],
+            'address' => $validated['address'],
+            'country' => $validated['country'],
+            'supply_type' => $this->normalizeJsonArrayInput($validated['supply_type'] ?? []),
+            'processing_status' => $this->normalizeJsonArrayInput($validated['processing_status'] ?? []),
+            'estimated_weekly_volume' => $validated['estimated_weekly_volume'] ?? null,
+        ]);
+
+        if ($request->hasFile('profile_image')) {
+            $seller->profile_image = $request->file('profile_image')->store('seller-profile', 'public');
+        }
+
+        if ($request->hasFile('trade_license_file')) {
+            $seller->trade_license_file = $request->file('trade_license_file')->store('seller-kyc', 'public');
+        }
+
+        if ($request->hasFile('facility_photos_file')) {
+            $seller->facility_photos_file = $request->file('facility_photos_file')->store('seller-kyc', 'public');
+        }
+
+        if ($request->hasFile('certificates_file')) {
+            $seller->certificates_file = $request->file('certificates_file')->store('seller-kyc', 'public');
+        }
+
+        $seller->save();
+
+        $request->session()->put('logged_user', [
+            'id' => $seller->id,
+            'name' => $seller->name,
+            'email' => $seller->email,
+            'type' => $seller->type,
+            'profile_image' => $seller->profile_image,
+        ]);
+
+        return redirect()
+            ->route('seller.profile-settings')
+            ->with('success', 'Profile updated successfully.');
+    }
+
+    public function changePassword(): View|RedirectResponse
+    {
+        $seller = $this->getAuthenticatedSeller();
+
+        if (! $seller) {
+            return redirect()->route('home.login')->with('error', 'Please log in as a seller to access password settings.');
+        }
+
+        return view('bid_web.seller.change-password', [
+            'seller' => $seller,
+        ]);
+    }
+
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $seller = $this->getAuthenticatedSeller();
+
+        if (! $seller) {
+            return redirect()->route('home.login')->with('error', 'Please log in as a seller to update your password.');
+        }
+
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $passwordMatches = Hash::check($validated['current_password'], (string) $seller->password)
+            || hash_equals((string) $seller->password, $validated['current_password']);
+
+        if (! $passwordMatches) {
+            return back()->withErrors([
+                'current_password' => 'Current password is incorrect.',
+            ]);
+        }
+
+        $seller->password = Hash::make($validated['new_password']);
+        $seller->save();
+
+        return redirect()
+            ->route('seller.change-password')
+            ->with('success', 'Password updated successfully.');
     }
 
     public function storeLot(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'species' => ['required', 'string', 'max:255'],
-            'quantity' => ['required', 'numeric', 'min:0'],
-            'starting_price' => ['required', 'numeric', 'min:0'],
-            'harvest_date' => ['required', 'date'],
-            'storage_temperature' => ['required', 'string', 'max:50'],
-            'notes' => ['required', 'string', 'max:1000'],
-            'product_image' => ['required', 'image', 'max:5120'],
-            'health_certificate' => ['required', 'file', 'max:5120'],
-            'additional_documents' => ['required', 'file', 'max:5120'],
-        ], [
-            'title.required' => 'Lot title is required.',
-            'species.required' => 'Species is required.',
-            'quantity.required' => 'Quantity is required.',
-            'starting_price.required' => 'Starting price is required.',
-            'harvest_date.required' => 'Harvest date is required.',
-            'storage_temperature.required' => 'Storage temperature is required.',
-            'notes.required' => 'Lot notes are required.',
-            'product_image.required' => 'Product image is required.',
-            'health_certificate.required' => 'Health certificate is required.',
-            'additional_documents.required' => 'Additional documents are required.',
-        ]);
+        $validated = $this->validateLotRequest($request, true);
 
         $sellerId = session('logged_user.id');
         if (! $sellerId) {
@@ -182,6 +294,108 @@ class SellerController extends Controller
         return redirect()
             ->route('seller.lot-list')
             ->with('success', 'Lot submitted for QC review.');
+    }
+
+    public function editLot(Lot $lot): View|RedirectResponse
+    {
+        if (! $this->sellerCanManageLot($lot)) {
+            return redirect()->route('seller.lot-list')->with('error', 'You are not allowed to edit this lot.');
+        }
+
+        if (! $this->canEditLot($lot)) {
+            return redirect()->route('seller.lot-list')->with('error', 'Only draft or pending QC lots can be edited.');
+        }
+
+        return view('bid_web.seller.create-lot', [
+            'lot' => $lot,
+            'isEditMode' => true,
+        ]);
+    }
+
+    public function updateLot(Request $request, Lot $lot): RedirectResponse
+    {
+        if (! $this->sellerCanManageLot($lot)) {
+            return redirect()->route('seller.lot-list')->with('error', 'You are not allowed to update this lot.');
+        }
+
+        if (! $this->canEditLot($lot)) {
+            return redirect()->route('seller.lot-list')->with('error', 'Only draft or pending QC lots can be edited.');
+        }
+
+        $validated = $this->validateLotRequest($request, false);
+
+        $lotData = [
+            'title' => $validated['title'],
+            'species' => $validated['species'],
+            'quantity' => $validated['quantity'],
+            'starting_price' => $validated['starting_price'],
+            'harvest_date' => $validated['harvest_date'],
+            'storage_temperature' => $validated['storage_temperature'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+        ];
+
+        if ($request->hasFile('product_image')) {
+            if ($lot->image_path) {
+                Storage::disk('public')->delete($lot->image_path);
+            }
+
+            $lotData['image_path'] = $request->file('product_image')->store('lot-images', 'public');
+        }
+
+        if ($request->hasFile('health_certificate')) {
+            if ($lot->health_certificate_path) {
+                Storage::disk('public')->delete($lot->health_certificate_path);
+            }
+
+            $lotData['health_certificate_path'] = $request->file('health_certificate')->store('lot-documents', 'public');
+        }
+
+        if ($request->hasFile('additional_documents')) {
+            if ($lot->documents_path) {
+                foreach (array_filter(explode(',', (string) $lot->documents_path)) as $documentPath) {
+                    Storage::disk('public')->delete(trim($documentPath));
+                }
+            }
+
+            $lotData['documents_path'] = $request->file('additional_documents')->store('lot-documents', 'public');
+        }
+
+        $lot->update($lotData);
+
+        return redirect()
+            ->route('seller.lot-list')
+            ->with('success', 'Lot updated successfully.');
+    }
+
+    public function destroyLot(Lot $lot): RedirectResponse
+    {
+        if (! $this->sellerCanManageLot($lot)) {
+            return redirect()->route('seller.lot-list')->with('error', 'You are not allowed to delete this lot.');
+        }
+
+        if (! $this->canDeleteLot($lot)) {
+            return redirect()->route('seller.lot-list')->with('error', 'Only draft or pending QC lots can be deleted.');
+        }
+
+        if ($lot->image_path) {
+            Storage::disk('public')->delete($lot->image_path);
+        }
+
+        if ($lot->health_certificate_path) {
+            Storage::disk('public')->delete($lot->health_certificate_path);
+        }
+
+        if ($lot->documents_path) {
+            foreach (array_filter(explode(',', (string) $lot->documents_path)) as $documentPath) {
+                Storage::disk('public')->delete(trim($documentPath));
+            }
+        }
+
+        $lot->delete();
+
+        return redirect()
+            ->route('seller.lot-list')
+            ->with('success', 'Lot deleted successfully.');
     }
 
     public function lotList(Request $request): View
@@ -761,22 +975,24 @@ class SellerController extends Controller
             return;
         }
 
-        $qcAdminIds = Admin::query()
+        $admins = Admin::query()
             ->whereIn('role', ['qc', 'admin'])
-            ->pluck('id')
-            ->all();
+            ->get(['id', 'role']);
 
-        if (! $qcAdminIds) {
+        if ($admins->isEmpty()) {
             return;
         }
 
         $lotLabel = '#LOT-' . str_pad((string) $lot->id, 4, '0', STR_PAD_LEFT);
         $sellerName = DB::table('users')->where('id', $lot->seller_id)->value('name') ?? 'Seller';
-        $url = route('qc.lot-subimitted-details', ['lot' => $lot->id]);
 
-        foreach ($qcAdminIds as $qcAdminId) {
+        foreach ($admins as $admin) {
+            $url = $admin->role === 'admin'
+                ? route('admin.lot-details', ['lot' => $lot->id])
+                : route('qc.lot-subimitted-details', ['lot' => $lot->id]);
+
             AppNotification::create([
-                'admin_id' => $qcAdminId,
+                'admin_id' => $admin->id,
                 'title' => 'New Lot Submitted',
                 'message' => "{$sellerName} submitted {$lotLabel} for QC review.",
                 'type' => 'info',
@@ -977,5 +1193,131 @@ class SellerController extends Controller
         return response()->json([
             'unread_count' => 0,
         ]);
+    }
+
+    private function validateLotRequest(Request $request, bool $isCreate): array
+    {
+        return $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'species' => ['required', 'string', 'max:255'],
+            'quantity' => ['required', 'numeric', 'min:0'],
+            'starting_price' => ['required', 'numeric', 'min:0'],
+            'harvest_date' => ['required', 'date'],
+            'storage_temperature' => ['required', 'string', 'max:50'],
+            'notes' => ['required', 'string', 'max:1000'],
+            'product_image' => [$isCreate ? 'required' : 'nullable', 'image', 'max:5120'],
+            'health_certificate' => [$isCreate ? 'required' : 'nullable', 'file', 'max:5120'],
+            'additional_documents' => [$isCreate ? 'required' : 'nullable', 'file', 'max:5120'],
+        ], [
+            'title.required' => 'Lot title is required.',
+            'species.required' => 'Species is required.',
+            'quantity.required' => 'Quantity is required.',
+            'starting_price.required' => 'Starting price is required.',
+            'harvest_date.required' => 'Harvest date is required.',
+            'storage_temperature.required' => 'Storage temperature is required.',
+            'notes.required' => 'Lot notes are required.',
+            'product_image.required' => 'Product image is required.',
+            'health_certificate.required' => 'Health certificate is required.',
+            'additional_documents.required' => 'Additional documents are required.',
+        ]);
+    }
+
+    private function sellerCanManageLot(Lot $lot): bool
+    {
+        $sellerId = session('logged_user.id');
+        if (! $sellerId) {
+            $sellerId = DB::table('users')->where('type', 'seller')->value('id');
+        }
+
+        return (bool) ($sellerId && (int) $lot->seller_id === (int) $sellerId);
+    }
+
+    private function canEditLot(Lot $lot): bool
+    {
+        return in_array(Str::lower(trim((string) $lot->status)), ['draft', 'pending qc'], true);
+    }
+
+    private function canDeleteLot(Lot $lot): bool
+    {
+        return $this->canEditLot($lot);
+    }
+
+    private function getAuthenticatedSeller(): ?User
+    {
+        $sellerId = session('logged_user.id');
+        $userType = session('logged_user.type');
+
+        if (! $sellerId || $userType !== 'seller') {
+            return null;
+        }
+
+        $seller = User::query()
+            ->where('id', $sellerId)
+            ->where('type', 'seller')
+            ->first();
+
+        if (! $seller) {
+            return null;
+        }
+
+        $seller->supply_type = $this->decodeJsonArray($seller->supply_type ?? null);
+        $seller->processing_status = $this->decodeJsonArray($seller->processing_status ?? null);
+
+        return $seller;
+    }
+
+    private function decodeJsonArray(mixed $value): array
+    {
+        if (is_array($value)) {
+            return array_values(array_filter($value, fn ($item) => filled($item)));
+        }
+
+        if (! is_string($value) || trim($value) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded)
+            ? array_values(array_filter($decoded, fn ($item) => filled($item)))
+            : [];
+    }
+
+    private function normalizeJsonArrayInput(array $value): string
+    {
+        $filtered = array_values(array_filter($value, fn ($item) => filled($item)));
+
+        return json_encode($filtered);
+    }
+
+    private function sellerProfileOptions(): array
+    {
+        return [
+            'country' => [
+                'France',
+                'Spain',
+                'India',
+                'Morocco',
+                'Djibouti',
+            ],
+            'supply_type' => [
+                'Fresh',
+                'Frozen',
+                'Both',
+            ],
+            'processing_status' => [
+                'Whole',
+                'Fillet',
+                'Packed',
+                'IQF',
+                'Other',
+            ],
+            'estimated_weekly_volume' => [
+                '100 - 500 kg',
+                '500 - 1000 kg',
+                '1000 - 5000 kg',
+                '5000+ kg',
+            ],
+        ];
     }
 }

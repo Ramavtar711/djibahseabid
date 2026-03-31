@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Admin;
 use App\Models\AppNotification;
 use App\Models\AudienceSegment;
 use App\Models\Lot;
@@ -11,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -628,7 +630,87 @@ class QcController extends Controller
 
     public function accountSettings(): View
     {
-        return $this->renderOrDashboard('bid_admin.qc.account-settings');
+        $admin = $this->getAuthenticatedQcAdmin();
+
+        if (! $admin) {
+            return $this->dashboard();
+        }
+
+        return view('bid_admin.qc.account-settings', [
+            'admin' => $admin,
+        ]);
+    }
+
+    public function updateAccountSettings(Request $request): RedirectResponse
+    {
+        $admin = $this->getAuthenticatedQcAdmin();
+
+        if (! $admin) {
+            return redirect()->route('qc.login')->with('error', 'Please log in as QC to update your profile.');
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:admins,email,' . $admin->id],
+        ]);
+
+        $admin->fill([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+        ]);
+
+        $admin->save();
+
+        $request->session()->put('admin_user', [
+            'id' => $admin->id,
+            'name' => $admin->name,
+            'email' => $admin->email,
+            'role' => $admin->role,
+        ]);
+
+        return redirect()
+            ->route('qc.account-settings')
+            ->with('success', 'Profile updated successfully.');
+    }
+
+    public function changePassword(): View|RedirectResponse
+    {
+        $admin = $this->getAuthenticatedQcAdmin();
+
+        if (! $admin) {
+            return redirect()->route('qc.login')->with('error', 'Please log in as QC to access password settings.');
+        }
+
+        return view('bid_admin.qc.change-password', [
+            'admin' => $admin,
+        ]);
+    }
+
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $admin = $this->getAuthenticatedQcAdmin();
+
+        if (! $admin) {
+            return redirect()->route('qc.login')->with('error', 'Please log in as QC to update your password.');
+        }
+
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        if (! Hash::check($validated['current_password'], (string) $admin->password)) {
+            return back()->withErrors([
+                'current_password' => 'Current password is incorrect.',
+            ]);
+        }
+
+        $admin->password = Hash::make($validated['new_password']);
+        $admin->save();
+
+        return redirect()
+            ->route('qc.change-password')
+            ->with('success', 'Password updated successfully.');
     }
 
     public function login(): View
@@ -658,5 +740,20 @@ class QcController extends Controller
             ->value('id');
 
         return $fallback ? (int) $fallback : null;
+    }
+
+    private function getAuthenticatedQcAdmin(): ?Admin
+    {
+        $adminId = session('admin_user.id');
+        $adminRole = session('admin_user.role');
+
+        if (! $adminId || ! in_array($adminRole, ['qc', 'admin'], true)) {
+            return null;
+        }
+
+        return Admin::query()
+            ->where('id', $adminId)
+            ->whereIn('role', ['qc', 'admin'])
+            ->first();
     }
 }

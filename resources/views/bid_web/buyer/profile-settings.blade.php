@@ -125,7 +125,7 @@
             <div class="row align-items-center g-3">
                 <div class="col">
                     <h1 class="page-title text-white">Profile Settings</h1>
-                    <p class="text-white mb-0">Buyer account ko dynamic aur editable bana diya gaya hai.</p>
+                 
                 </div>
             </div>
         </div>

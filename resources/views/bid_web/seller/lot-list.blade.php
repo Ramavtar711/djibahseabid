@@ -79,6 +79,11 @@
                {{ session('success') }}
             </div>
          @endif
+         @if(session('error'))
+            <div class="alert alert-danger text-white" id="lot-error" role="alert">
+               {{ session('error') }}
+            </div>
+         @endif
          <div class="glass p-3 mb-4">
             <form class="row g-3 align-items-end" method="GET" action="{{ route('seller.lot-list') }}">
                <div class="col-lg-4">
@@ -154,6 +159,7 @@
                     @php
                         $statusKey = strtolower(trim($lot->status ?? 'draft'));
                         $badgeClass = $statusClasses[$statusKey] ?? 'bg-secondary';
+                        $canManageLot = in_array($statusKey, ['draft', 'pending qc'], true);
                     @endphp
                     <tr>
                         <td>#LOT{{ $lot->id }}</td>
@@ -163,7 +169,22 @@
                         <td>${{ number_format($lot->starting_price, 2) }}/kg</td>
                         <td><span class="badge {{ $badgeClass }}">{{ ucfirst($lot->status ?? 'Draft') }}</span></td>
                         <td>{{ optional($lot->created_at)->format('d M') }}</td>
-                        <td><a class="btn btn-sm btn-primary" href="{{ route('seller.lot-details', $lot->id) }}">View</a></td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn btn-sm btn-primary" href="{{ route('seller.lot-details', $lot->id) }}">View</a>
+                                @if($canManageLot)
+                                    <a class="btn btn-sm btn-warning" href="{{ route('seller.edit-lot', $lot->id) }}">Edit</a>
+                                    <form method="POST" action="{{ route('seller.delete-lot', $lot->id) }}" onsubmit="return confirm('Are you sure you want to delete this lot?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                                    </form>
+                                @else
+                                    <button class="btn btn-sm btn-warning" type="button" disabled>Edit</button>
+                                    <button class="btn btn-sm btn-danger" type="button" disabled>Delete</button>
+                                @endif
+                            </div>
+                        </td>
                     </tr>
                 @empty
                     <tr>
@@ -198,6 +219,21 @@
 <script>
     setTimeout(() => {
         const alertEl = document.getElementById('lot-success');
+        if (alertEl) {
+            alertEl.style.transition = 'opacity 0.5s ease';
+            alertEl.style.opacity = '0';
+            setTimeout(() => {
+                alertEl.remove();
+            }, 500);
+        }
+    }, 5000);
+</script>
+@endif
+
+@if(session('error'))
+<script>
+    setTimeout(() => {
+        const alertEl = document.getElementById('lot-error');
         if (alertEl) {
             alertEl.style.transition = 'opacity 0.5s ease';
             alertEl.style.opacity = '0';
