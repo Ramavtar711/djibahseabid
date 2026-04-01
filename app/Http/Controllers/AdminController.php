@@ -15,6 +15,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -143,9 +145,236 @@ class AdminController extends Controller
             'message' => 'Auction stopped with no bids. Lot marked as unsold.',
         ]);
     }
-    public function upcomingAuction(): View { return view('bid_admin.admin.upcoming-auction'); }
-    public function lotManagement(): View { return view('bid_admin.admin.lot-management'); }
-    public function createLot(): View { return view('bid_admin.admin.create-lot'); }
+    public function upcomingAuction(): View
+    {
+        $this->syncScheduledAuctionsToActive();
+
+        $now = now();
+        $todayStart = $now->copy()->startOfDay();
+        $tomorrowStart = $todayStart->copy()->addDay();
+
+        $upcomingLots = Lot::query()
+            ->currentlyUpcoming()
+            ->with('seller')
+            ->orderBy('auction_start_at')
+            ->paginate(12)
+            ->withQueryString();
+
+        $upcomingLots->getCollection()->transform(function (Lot $lot) use ($now) {
+            $lot->starts_in_label = $this->formatCountdown($lot->auction_start_at, $now, false);
+
+            return $lot;
+        });
+
+        return view('bid_admin.admin.upcoming-auction', [
+            'systemStatus' => Lot::query()->currentlyActive()->count() > 0 ? 'LIVE' : 'STANDBY',
+            'liveAuctionsCount' => Lot::query()->currentlyActive()->count(),
+            'upcomingAuctionsCount' => Lot::query()->currentlyUpcoming()->count(),
+            'revenueToday' => (float) Settlement::query()->whereBetween('created_at', [$todayStart, $tomorrowStart])->sum('amount'),
+            'registeredBuyersCount' => User::query()->where('type', 'buyer')->count(),
+            'upcomingLots' => $upcomingLots,
+        ]);
+    }
+    public function lotManagement(Request $request): View
+    {
+        $this->syncScheduledAuctionsToActive();
+
+        $now = now();
+        $todayStart = $now->copy()->startOfDay();
+        $tomorrowStart = $todayStart->copy()->addDay();
+
+        $speciesFilter = trim((string) $request->query('species', ''));
+        $statusFilter = trim((string) $request->query('status', ''));
+        $sellerFilter = trim((string) $request->query('seller', ''));
+        $dateFilter = trim((string) $request->query('date', ''));
+
+        $baseQuery = Lot::query()->with('seller')->withCount('bids');
+
+        $lots = (clone $baseQuery)
+            ->when($speciesFilter !== '', fn ($query) => $query->where('species', $speciesFilter))
+            ->when($statusFilter !== '', fn ($query) => $query->whereRaw('LOWER(status) = ?', [Str::lower($statusFilter)]))
+            ->when($sellerFilter !== '', fn ($query) => $query->where('seller_id', $sellerFilter))
+            ->when($dateFilter !== '', fn ($query) => $query->whereDate('auction_end_at', $dateFilter))
+            ->orderByRaw('CASE WHEN auction_end_at IS NULL THEN 1 ELSE 0 END')
+            ->orderByDesc('auction_end_at')
+            ->latest('id')
+            ->paginate(12)
+            ->withQueryString();
+
+        $lots->getCollection()->transform(function (Lot $lot) {
+            $lot->setAttribute('increment_amount', max(50, round(((float) ($lot->starting_price ?? 0)) * 0.05, 2)));
+
+            return $lot;
+        });
+
+        $speciesOptions = Lot::query()
+            ->whereNotNull('species')
+            ->distinct()
+            ->orderBy('species')
+            ->pluck('species');
+
+        $statusOptions = Lot::query()
+            ->select('status')
+            ->distinct()
+            ->pluck('status')
+            ->filter()
+            ->map(fn ($status) => Str::lower(trim((string) $status)))
+            ->unique()
+            ->values();
+
+        $sellerOptions = User::query()
+            ->where('type', 'seller')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('bid_admin.admin.lot-management', [
+            'systemStatus' => Lot::query()->currentlyActive()->count() > 0 ? 'LIVE' : 'STANDBY',
+            'liveAuctionsCount' => Lot::query()->currentlyActive()->count(),
+            'upcomingAuctionsCount' => Lot::query()->currentlyUpcoming()->count(),
+            'revenueToday' => (float) Settlement::query()->whereBetween('created_at', [$todayStart, $tomorrowStart])->sum('amount'),
+            'registeredBuyersCount' => User::query()->where('type', 'buyer')->count(),
+            'lots' => $lots,
+            'speciesOptions' => $speciesOptions,
+            'statusOptions' => $statusOptions,
+            'sellerOptions' => $sellerOptions,
+        ]);
+    }
+    public function createLot(): View
+    {
+        $this->syncScheduledAuctionsToActive();
+
+        return view('bid_admin.admin.create-lot', $this->buildAdminLotFormData(new Lot()));
+    }
+
+    public function editLot(Lot $lot): View
+    {
+        $this->syncScheduledAuctionsToActive();
+
+        return view('bid_admin.admin.create-lot', $this->buildAdminLotFormData($lot, true));
+    }
+
+    public function storeLot(Request $request): RedirectResponse
+    {
+        $validated = $this->validateAdminLotRequest($request);
+
+        $seller = User::query()
+            ->where('id', $validated['seller_id'])
+            ->where('type', 'seller')
+            ->first();
+
+        if (! $seller) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'seller_id' => 'Selected seller is invalid.',
+                ]);
+        }
+
+        $lotData = [
+            'seller_id' => $seller->id,
+            'title' => $validated['title'],
+            'species' => $validated['species'],
+            'quantity' => $validated['quantity'],
+            'starting_price' => $validated['starting_price'],
+            'harvest_date' => $validated['harvest_date'],
+            'storage_temperature' => $validated['storage_temperature'],
+            'notes' => $validated['notes'],
+            'status' => 'draft',
+        ];
+
+        if ($request->hasFile('product_image')) {
+            $lotData['image_path'] = $request->file('product_image')->store('lot-images', 'public');
+        }
+
+        if ($request->hasFile('health_certificate')) {
+            $lotData['health_certificate_path'] = $request->file('health_certificate')->store('lot-documents', 'public');
+        }
+
+        if ($request->hasFile('additional_documents')) {
+            $lotData['documents_path'] = $request->file('additional_documents')->store('lot-documents', 'public');
+        }
+
+        $lot = Lot::create($lotData);
+
+        $this->notifyQcAndAdminsNewLot($lot);
+        $this->notifySellerLotCreatedByAdmin($lot);
+        $this->notifyBuyersNewLot($lot);
+
+        return redirect()
+            ->route('admin.lot-management')
+            ->with('success', 'Lot created successfully for the selected seller.');
+    }
+
+    public function updateLot(Request $request, Lot $lot): RedirectResponse
+    {
+        $validated = $this->validateAdminLotRequest($request, false);
+
+        $seller = User::query()
+            ->where('id', $validated['seller_id'])
+            ->where('type', 'seller')
+            ->first();
+
+        if (! $seller) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'seller_id' => 'Selected seller is invalid.',
+                ]);
+        }
+
+        $lotData = [
+            'seller_id' => $seller->id,
+            'title' => $validated['title'],
+            'species' => $validated['species'],
+            'quantity' => $validated['quantity'],
+            'starting_price' => $validated['starting_price'],
+            'harvest_date' => $validated['harvest_date'],
+            'storage_temperature' => $validated['storage_temperature'],
+            'notes' => $validated['notes'],
+        ];
+
+        if ($request->hasFile('product_image')) {
+            $this->deleteStoredFiles([$lot->image_path]);
+            $lotData['image_path'] = $request->file('product_image')->store('lot-images', 'public');
+        }
+
+        if ($request->hasFile('health_certificate')) {
+            $this->deleteStoredFiles([$lot->health_certificate_path]);
+            $lotData['health_certificate_path'] = $request->file('health_certificate')->store('lot-documents', 'public');
+        }
+
+        if ($request->hasFile('additional_documents')) {
+            $this->deleteStoredFiles($this->extractStoredPaths($lot->documents_path));
+            $lotData['documents_path'] = $request->file('additional_documents')->store('lot-documents', 'public');
+        }
+
+        $lot->update($lotData);
+
+        return redirect()
+            ->route('admin.lot-management')
+            ->with('success', 'Lot updated successfully.');
+    }
+
+    public function destroyLot(Lot $lot): RedirectResponse
+    {
+        if ($lot->bids()->exists()) {
+            return redirect()
+                ->route('admin.lot-management')
+                ->with('error', 'This lot cannot be deleted because bids have already been placed on it.');
+        }
+
+        $this->deleteStoredFiles([
+            $lot->image_path,
+            $lot->health_certificate_path,
+            ...$this->extractStoredPaths($lot->documents_path),
+        ]);
+
+        $lot->delete();
+
+        return redirect()
+            ->route('admin.lot-management')
+            ->with('success', 'Lot deleted successfully.');
+    }
     public function lotDetails(Request $request): View
     {
         $lotId = $request->query('lot');
@@ -669,6 +898,197 @@ class AdminController extends Controller
         ]);
     }
 
+    private function notifyQcAndAdminsNewLot(Lot $lot): void
+    {
+        if (! Schema::hasTable('app_notifications') || ! Schema::hasColumn('app_notifications', 'admin_id')) {
+            return;
+        }
+
+        $admins = Admin::query()
+            ->whereIn('role', ['qc', 'admin'])
+            ->get(['id', 'role']);
+
+        if ($admins->isEmpty()) {
+            return;
+        }
+
+        $lotLabel = '#LOT-' . str_pad((string) $lot->id, 4, '0', STR_PAD_LEFT);
+        $sellerName = $lot->seller?->name
+            ?? DB::table('users')->where('id', $lot->seller_id)->value('name')
+            ?? 'Seller';
+
+        foreach ($admins as $admin) {
+            $url = $admin->role === 'admin'
+                ? route('admin.lot-details', ['lot' => $lot->id])
+                : route('qc.lot-subimitted-details', ['lot' => $lot->id]);
+
+            AppNotification::create([
+                'admin_id' => $admin->id,
+                'title' => 'New Lot Added By Admin',
+                'message' => "Admin created {$lotLabel} for {$sellerName}.",
+                'type' => 'info',
+                'data' => [
+                    'lot_id' => $lot->id,
+                    'event' => 'admin_created_lot',
+                    'url' => $url,
+                ],
+            ]);
+        }
+    }
+
+    private function notifySellerLotCreatedByAdmin(Lot $lot): void
+    {
+        if (! Schema::hasTable('app_notifications') || ! Schema::hasColumn('app_notifications', 'user_id')) {
+            return;
+        }
+
+        if (! $lot->seller_id) {
+            return;
+        }
+
+        $lotLabel = '#LOT-' . str_pad((string) $lot->id, 4, '0', STR_PAD_LEFT);
+        $url = route('seller.lot-list') . '?search=' . urlencode((string) $lot->id);
+
+        AppNotification::create([
+            'user_id' => $lot->seller_id,
+            'title' => 'Lot Added By Admin',
+            'message' => "Admin created {$lotLabel} under your seller account.",
+            'type' => 'info',
+            'data' => [
+                'lot_id' => $lot->id,
+                'event' => 'admin_created_lot_seller',
+                'url' => $url,
+            ],
+        ]);
+    }
+
+    private function notifyBuyersNewLot(Lot $lot): void
+    {
+        if (! Schema::hasTable('app_notifications') || ! Schema::hasColumn('app_notifications', 'user_id')) {
+            return;
+        }
+
+        $buyerIds = $this->resolveTargetBuyerIdsForLot($lot);
+
+        if (! $buyerIds) {
+            return;
+        }
+
+        $lotLabel = '#LOT-' . str_pad((string) $lot->id, 4, '0', STR_PAD_LEFT);
+        $lotName = $lot->species ?: ($lot->title ?: 'new seafood lot');
+        $sellerName = $lot->seller?->name
+            ?? DB::table('users')->where('id', $lot->seller_id)->value('name')
+            ?? 'Seller';
+        $url = route('buyer.upcoming-auction');
+
+        foreach ($buyerIds as $buyerId) {
+            AppNotification::create([
+                'user_id' => $buyerId,
+                'title' => 'New Lot Available',
+                'message' => "{$sellerName} has a new lot {$lotLabel} ({$lotName}). Check upcoming auctions.",
+                'type' => 'info',
+                'data' => [
+                    'lot_id' => $lot->id,
+                    'event' => 'admin_created_lot_buyer',
+                    'url' => $url,
+                ],
+            ]);
+        }
+    }
+
+    private function resolveTargetBuyerIdsForLot(Lot $lot): array
+    {
+        $buyers = User::query()
+            ->where('type', 'buyer')
+            ->get(['id', 'interested_in']);
+
+        if ($buyers->isEmpty()) {
+            return [];
+        }
+
+        $allBuyerIds = $buyers->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $interestHint = $this->inferBuyerInterestHint($lot);
+
+        $preferenceMatchedIds = $buyers
+            ->filter(function (User $buyer) use ($interestHint) {
+                $interests = collect($this->decodeJsonArray($buyer->interested_in ?? null))
+                    ->map(fn ($value) => Str::lower(trim((string) $value)))
+                    ->filter()
+                    ->values();
+
+                if ($interests->isEmpty()) {
+                    return false;
+                }
+
+                if ($interests->contains('both')) {
+                    return true;
+                }
+
+                return $interestHint ? $interests->contains($interestHint) : false;
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $speciesMatchedIds = [];
+
+        if (filled($lot->species)) {
+            $speciesMatchedIds = DB::table('bids')
+                ->join('lots', 'lots.id', '=', 'bids.lot_id')
+                ->whereIn('bids.buyer_id', $allBuyerIds)
+                ->whereRaw('LOWER(lots.species) = ?', [Str::lower(trim((string) $lot->species))])
+                ->distinct()
+                ->pluck('bids.buyer_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
+        $targetedBuyerIds = array_values(array_unique(array_merge($preferenceMatchedIds, $speciesMatchedIds)));
+
+        return $targetedBuyerIds ?: $allBuyerIds;
+    }
+
+    private function inferBuyerInterestHint(Lot $lot): ?string
+    {
+        $haystack = Str::lower(trim(implode(' ', array_filter([
+            (string) ($lot->title ?? ''),
+            (string) ($lot->species ?? ''),
+            (string) ($lot->notes ?? ''),
+            (string) ($lot->storage_temperature ?? ''),
+        ]))));
+
+        if ($haystack === '') {
+            return null;
+        }
+
+        if (Str::contains($haystack, ['frozen', 'iqf'])) {
+            return 'frozen';
+        }
+
+        if (Str::contains($haystack, ['fresh', 'ice', 'chilled'])) {
+            return 'fresh';
+        }
+
+        return null;
+    }
+
+    private function decodeJsonArray(mixed $value): array
+    {
+        if (is_array($value)) {
+            return array_values(array_filter($value, fn ($item) => filled($item)));
+        }
+
+        if (! is_string($value) || trim($value) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded)
+            ? array_values(array_filter($decoded, fn ($item) => filled($item)))
+            : [];
+    }
+
     private function syncScheduledAuctionsToActive(): void
     {
         $now = now();
@@ -719,5 +1139,74 @@ class AdminController extends Controller
             return 'text-warning';
         }
         return 'text-success';
+    }
+
+    private function validateAdminLotRequest(Request $request, bool $isCreate = true): array
+    {
+        return $request->validate([
+            'seller_id' => ['required', 'integer', 'exists:users,id'],
+            'title' => ['required', 'string', 'max:255'],
+            'species' => ['required', 'string', 'max:255'],
+            'quantity' => ['required', 'numeric', 'min:0'],
+            'starting_price' => ['required', 'numeric', 'min:0'],
+            'harvest_date' => ['required', 'date'],
+            'storage_temperature' => ['required', 'string', 'max:50'],
+            'notes' => ['required', 'string', 'max:1000'],
+            'product_image' => [$isCreate ? 'required' : 'nullable', 'image', 'max:5120'],
+            'health_certificate' => [$isCreate ? 'required' : 'nullable', 'file', 'max:5120'],
+            'additional_documents' => [$isCreate ? 'required' : 'nullable', 'file', 'max:5120'],
+        ], [
+            'seller_id.required' => 'Seller is required.',
+            'title.required' => 'Lot title is required.',
+            'species.required' => 'Species is required.',
+            'quantity.required' => 'Quantity is required.',
+            'starting_price.required' => 'Starting price is required.',
+            'harvest_date.required' => 'Harvest date is required.',
+            'storage_temperature.required' => 'Storage temperature is required.',
+            'notes.required' => 'Lot notes are required.',
+            'product_image.required' => 'Product image is required.',
+            'health_certificate.required' => 'Health certificate is required.',
+            'additional_documents.required' => 'Additional documents are required.',
+        ]);
+    }
+
+    private function buildAdminLotFormData(Lot $lot, bool $isEditMode = false): array
+    {
+        $now = now();
+        $todayStart = $now->copy()->startOfDay();
+        $tomorrowStart = $todayStart->copy()->addDay();
+
+        return [
+            'systemStatus' => Lot::query()->currentlyActive()->count() > 0 ? 'LIVE' : 'STANDBY',
+            'liveAuctionsCount' => Lot::query()->currentlyActive()->count(),
+            'upcomingAuctionsCount' => Lot::query()->currentlyUpcoming()->count(),
+            'revenueToday' => (float) Settlement::query()->whereBetween('created_at', [$todayStart, $tomorrowStart])->sum('amount'),
+            'registeredBuyersCount' => User::query()->where('type', 'buyer')->count(),
+            'sellerOptions' => User::query()->where('type', 'seller')->orderBy('name')->get(['id', 'name']),
+            'lot' => $lot,
+            'isEditMode' => $isEditMode,
+        ];
+    }
+
+    private function extractStoredPaths(?string $value): array
+    {
+        return collect(explode(',', (string) $value))
+            ->map(fn ($path) => trim($path))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function deleteStoredFiles(array $paths): void
+    {
+        foreach ($paths as $path) {
+            $normalizedPath = trim((string) $path);
+
+            if ($normalizedPath === '') {
+                continue;
+            }
+
+            Storage::disk('public')->delete($normalizedPath);
+        }
     }
 }

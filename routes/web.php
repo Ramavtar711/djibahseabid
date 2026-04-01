@@ -40,6 +40,10 @@ Route::prefix('admin')->group(function () {
     Route::get('/upcoming-auction', [AdminController::class, 'upcomingAuction'])->name('admin.upcoming-auction');
     Route::get('/lot-management', [AdminController::class, 'lotManagement'])->name('admin.lot-management');
     Route::get('/create-lot', [AdminController::class, 'createLot'])->name('admin.create-lot');
+    Route::post('/create-lot', [AdminController::class, 'storeLot'])->name('admin.store-lot');
+    Route::get('/lot-edit/{lot}', [AdminController::class, 'editLot'])->name('admin.edit-lot');
+    Route::put('/lot-edit/{lot}', [AdminController::class, 'updateLot'])->name('admin.update-lot');
+    Route::delete('/lot-delete/{lot}', [AdminController::class, 'destroyLot'])->name('admin.delete-lot');
     Route::get('/lot-details', [AdminController::class, 'lotDetails'])->name('admin.lot-details');
     Route::get('/buyers', [AdminController::class, 'buyers'])->name('admin.buyers');
     Route::get('/buyer-details', [AdminController::class, 'buyerDetails'])->name('admin.buyer-details');

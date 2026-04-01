@@ -22,7 +22,7 @@
 
                      </li>
                      <li>
-                        <a href="{{ route('admin.lot-management') }}" class="{{ request()->routeIs('admin.lot-management', 'admin.create-lot', 'admin.lot-details') ? 'active' : '' }}"><i class="bi bi-box"></i> <span> Lots Managements</span> </a>
+                        <a href="{{ route('admin.lot-management') }}" class="{{ request()->routeIs('admin.lot-management', 'admin.create-lot', 'admin.edit-lot', 'admin.lot-details') ? 'active' : '' }}"><i class="bi bi-box"></i> <span> Lots Managements</span> </a>
 
                      </li>
                      <li class="menu-title"><span>USERS</span></li>

@@ -2,6 +2,11 @@
 
 @include('bid_web.seller.include.side_menu')
 
+@php
+    $statusKey = strtolower(trim($lot->status ?? 'draft'));
+    $isModificationResubmission = $isEditMode && $statusKey === 'needs modification';
+@endphp
+
 <!-- Page Wrapper -->
          <div class="page-wrapper">
             <div class="content container-fluid">
@@ -23,6 +28,12 @@
                 @csrf
                 @if($isEditMode)
                     @method('PUT')
+                @endif
+
+                @if($isModificationResubmission)
+                    <div class="alert alert-warning text-dark">
+                        QC ne is lot par modification request ki hai. Changes save karne ke baad ye lot dobara QC approval ke liye submit ho jayega.
+                    </div>
                 @endif
 
                 @if(session('success'))
@@ -148,7 +159,9 @@
                         <i class="bi bi-shield-check text-success fs-4"></i>
                         <span class="small opacity-50">Verified Seller QC Protocol Applied</span>
                     </div>
-                    <button type="submit" class="btn btn-primary shadow-lg">{{ $isEditMode ? 'Update Lot' : 'Submit for QC Review' }}</button>
+                    <button type="submit" class="btn btn-primary shadow-lg">
+                        {{ $isModificationResubmission ? 'Update & Resubmit for QC Review' : ($isEditMode ? 'Update Lot' : 'Submit for QC Review') }}
+                    </button>
                 </div>
             </form>
         </div>

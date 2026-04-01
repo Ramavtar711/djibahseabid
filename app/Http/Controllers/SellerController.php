@@ -290,6 +290,7 @@ class SellerController extends Controller
 
         $this->notifyQcNewLot($lot);
         $this->notifySellerLotSubmitted($lot);
+        $this->notifyBuyersNewLot($lot);
 
         return redirect()
             ->route('seller.lot-list')
@@ -303,7 +304,7 @@ class SellerController extends Controller
         }
 
         if (! $this->canEditLot($lot)) {
-            return redirect()->route('seller.lot-list')->with('error', 'Only draft or pending QC lots can be edited.');
+            return redirect()->route('seller.lot-list')->with('error', 'Only draft, pending QC, or needs modification lots can be edited.');
         }
 
         return view('bid_web.seller.create-lot', [
@@ -319,10 +320,11 @@ class SellerController extends Controller
         }
 
         if (! $this->canEditLot($lot)) {
-            return redirect()->route('seller.lot-list')->with('error', 'Only draft or pending QC lots can be edited.');
+            return redirect()->route('seller.lot-list')->with('error', 'Only draft, pending QC, or needs modification lots can be edited.');
         }
 
         $validated = $this->validateLotRequest($request, false);
+        $isResubmittingForQc = Str::lower(trim((string) $lot->status)) === 'needs modification';
 
         $lotData = [
             'title' => $validated['title'],
@@ -333,6 +335,10 @@ class SellerController extends Controller
             'storage_temperature' => $validated['storage_temperature'] ?? null,
             'notes' => $validated['notes'] ?? null,
         ];
+
+        if ($isResubmittingForQc) {
+            $lotData['status'] = 'pending qc';
+        }
 
         if ($request->hasFile('product_image')) {
             if ($lot->image_path) {
@@ -361,6 +367,14 @@ class SellerController extends Controller
         }
 
         $lot->update($lotData);
+
+        if ($isResubmittingForQc) {
+            $this->notifyQcNewLot($lot->fresh());
+
+            return redirect()
+                ->route('seller.lot-list')
+                ->with('success', 'Lot updated and resubmitted for QC review.');
+        }
 
         return redirect()
             ->route('seller.lot-list')
@@ -1099,6 +1113,115 @@ class SellerController extends Controller
         ]);
     }
 
+    private function notifyBuyersNewLot(Lot $lot): void
+    {
+        if (! Schema::hasTable('app_notifications') || ! Schema::hasColumn('app_notifications', 'user_id')) {
+            return;
+        }
+
+        $buyerIds = $this->resolveTargetBuyerIdsForLot($lot);
+
+        if (! $buyerIds) {
+            return;
+        }
+
+        $lotLabel = '#LOT-' . str_pad((string) $lot->id, 4, '0', STR_PAD_LEFT);
+        $lotName = $lot->species ?: ($lot->title ?: 'new seafood lot');
+        $sellerName = DB::table('users')->where('id', $lot->seller_id)->value('name') ?? 'Seller';
+        $url = route('buyer.upcoming-auction');
+
+        foreach ($buyerIds as $buyerId) {
+            AppNotification::create([
+                'user_id' => $buyerId,
+                'title' => 'New Lot Available',
+                'message' => "{$sellerName} added {$lotLabel} ({$lotName}). Check upcoming auctions.",
+                'type' => 'info',
+                'data' => [
+                    'lot_id' => $lot->id,
+                    'event' => 'new_lot_added',
+                    'url' => $url,
+                ],
+            ]);
+        }
+    }
+
+    private function resolveTargetBuyerIdsForLot(Lot $lot): array
+    {
+        $buyers = User::query()
+            ->where('type', 'buyer')
+            ->get(['id', 'interested_in']);
+
+        if ($buyers->isEmpty()) {
+            return [];
+        }
+
+        $allBuyerIds = $buyers->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $interestHint = $this->inferBuyerInterestHint($lot);
+
+        $preferenceMatchedIds = $buyers
+            ->filter(function (User $buyer) use ($interestHint) {
+                $interests = collect($this->decodeJsonArray($buyer->interested_in ?? null))
+                    ->map(fn ($value) => Str::lower(trim((string) $value)))
+                    ->filter()
+                    ->values();
+
+                if ($interests->isEmpty()) {
+                    return false;
+                }
+
+                if ($interests->contains('both')) {
+                    return true;
+                }
+
+                return $interestHint ? $interests->contains($interestHint) : false;
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $speciesMatchedIds = [];
+
+        if (filled($lot->species)) {
+            $speciesMatchedIds = DB::table('bids')
+                ->join('lots', 'lots.id', '=', 'bids.lot_id')
+                ->whereIn('bids.buyer_id', $allBuyerIds)
+                ->whereRaw('LOWER(lots.species) = ?', [Str::lower(trim((string) $lot->species))])
+                ->distinct()
+                ->pluck('bids.buyer_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
+        $targetedBuyerIds = array_values(array_unique(array_merge($preferenceMatchedIds, $speciesMatchedIds)));
+
+        // Fallback: if no matches found, notify all buyers so no launch alert is missed.
+        return $targetedBuyerIds ?: $allBuyerIds;
+    }
+
+    private function inferBuyerInterestHint(Lot $lot): ?string
+    {
+        $haystack = Str::lower(trim(implode(' ', array_filter([
+            (string) ($lot->title ?? ''),
+            (string) ($lot->species ?? ''),
+            (string) ($lot->notes ?? ''),
+            (string) ($lot->storage_temperature ?? ''),
+        ]))));
+
+        if ($haystack === '') {
+            return null;
+        }
+
+        if (Str::contains($haystack, ['frozen', 'iqf'])) {
+            return 'frozen';
+        }
+
+        if (Str::contains($haystack, ['fresh', 'ice', 'chilled'])) {
+            return 'fresh';
+        }
+
+        return null;
+    }
+
     public function notificationData(Request $request): JsonResponse
     {
         $userId = session('logged_user.id');
@@ -1234,12 +1357,12 @@ class SellerController extends Controller
 
     private function canEditLot(Lot $lot): bool
     {
-        return in_array(Str::lower(trim((string) $lot->status)), ['draft', 'pending qc'], true);
+        return in_array(Str::lower(trim((string) $lot->status)), ['draft', 'pending qc', 'needs modification'], true);
     }
 
     private function canDeleteLot(Lot $lot): bool
     {
-        return $this->canEditLot($lot);
+        return in_array(Str::lower(trim((string) $lot->status)), ['draft', 'pending qc'], true);
     }
 
     private function getAuthenticatedSeller(): ?User

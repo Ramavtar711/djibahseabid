@@ -130,6 +130,7 @@
             $statusClasses = [
                 'draft' => 'bg-secondary',
                 'pending qc' => 'bg-warning text-dark',
+                'needs modification' => 'bg-secondary',
                 'pending payment' => 'bg-warning text-dark',
                 'approved' => 'bg-success',
                 'scheduled' => 'bg-primary',
@@ -159,7 +160,7 @@
                     @php
                         $statusKey = strtolower(trim($lot->status ?? 'draft'));
                         $badgeClass = $statusClasses[$statusKey] ?? 'bg-secondary';
-                        $canManageLot = in_array($statusKey, ['draft', 'pending qc'], true);
+                        $canManageLot = in_array($statusKey, ['draft', 'pending qc', 'needs modification'], true);
                     @endphp
                     <tr>
                         <td>#LOT{{ $lot->id }}</td>
@@ -173,12 +174,18 @@
                             <div class="d-flex flex-wrap gap-2">
                                 <a class="btn btn-sm btn-primary" href="{{ route('seller.lot-details', $lot->id) }}">View</a>
                                 @if($canManageLot)
-                                    <a class="btn btn-sm btn-warning" href="{{ route('seller.edit-lot', $lot->id) }}">Edit</a>
-                                    <form method="POST" action="{{ route('seller.delete-lot', $lot->id) }}" onsubmit="return confirm('Are you sure you want to delete this lot?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-sm btn-danger" type="submit">Delete</button>
-                                    </form>
+                                    <a class="btn btn-sm btn-warning" href="{{ route('seller.edit-lot', $lot->id) }}">
+                                        {{ $statusKey === 'needs modification' ? 'Modify' : 'Edit' }}
+                                    </a>
+                                    @if(in_array($statusKey, ['draft', 'pending qc'], true))
+                                        <form method="POST" action="{{ route('seller.delete-lot', $lot->id) }}" onsubmit="return confirm('Are you sure you want to delete this lot?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                                        </form>
+                                    @else
+                                        <button class="btn btn-sm btn-danger" type="button" disabled>Delete</button>
+                                    @endif
                                 @else
                                     <button class="btn btn-sm btn-warning" type="button" disabled>Edit</button>
                                     <button class="btn btn-sm btn-danger" type="button" disabled>Delete</button>

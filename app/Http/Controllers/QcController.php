@@ -6,6 +6,7 @@ use App\Models\Admin;
 use App\Models\AppNotification;
 use App\Models\AudienceSegment;
 use App\Models\Lot;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -287,17 +288,13 @@ class QcController extends Controller
 
         $lot->audienceSegments()->sync($validated['audience_segments'] ?? []);
 
-        if ($lot->seller_id) {
-            $decision = $validated['qc_decision'];
-            $alreadyNotified = AppNotification::where('user_id', $lot->seller_id)
-                ->where('data->lot_id', $lot->id)
-                ->where('data->decision', $decision)
-                ->exists();
+        $decision = $validated['qc_decision'];
 
-            if ($previousDecision !== $decision || ! $alreadyNotified) {
-                $this->notifySellerDecision($lot, $decision);
-            }
-        }
+        // Same notification rule for all three decision types:
+        // approve, reject, and modify.
+        $this->notifySellerDecision($lot, $decision);
+        $this->notifyAdminDecision($lot, $decision);
+        $this->notifyTargetBuyersDecision($lot, $decision);
 
         $message = 'QC review saved. Decision: ' . Str::title($validated['qc_decision']);
 
@@ -347,6 +344,10 @@ class QcController extends Controller
             'anti_sniping_enabled' => $request->boolean('anti_sniping'),
             'status' => 'scheduled auction',
         ]);
+
+        $this->notifySellerAuctionScheduled($lot);
+        $this->notifyAdminAuctionScheduled($lot);
+        $this->notifyTargetBuyersAuctionScheduled($lot);
 
         return redirect()
             ->route('qc.auction-scheduled', ['lot' => $lot->id])
@@ -477,6 +478,25 @@ class QcController extends Controller
 
     private function notifySellerDecision(Lot $lot, string $decision): void
     {
+        if (! Schema::hasTable('app_notifications') || ! Schema::hasColumn('app_notifications', 'user_id')) {
+            return;
+        }
+
+        if (! $lot->seller_id) {
+            return;
+        }
+
+        $alreadyNotified = AppNotification::query()
+            ->where('user_id', $lot->seller_id)
+            ->where('data->lot_id', $lot->id)
+            ->where('data->event', 'qc_decision_seller')
+            ->where('data->decision', $decision)
+            ->exists();
+
+        if ($alreadyNotified) {
+            return;
+        }
+
         $lotLabel = '#LOT-' . str_pad((string) $lot->id, 4, '0', STR_PAD_LEFT);
 
         $title = match ($decision) {
@@ -506,10 +526,379 @@ class QcController extends Controller
             'type' => $type,
             'data' => [
                 'lot_id' => $lot->id,
+                'event' => 'qc_decision_seller',
                 'decision' => $decision,
                 'url' => $url,
             ],
         ]);
+    }
+
+    private function notifyAdminDecision(Lot $lot, string $decision): void
+    {
+        if (! Schema::hasTable('app_notifications') || ! Schema::hasColumn('app_notifications', 'admin_id')) {
+            return;
+        }
+
+        $adminIds = Admin::query()
+            ->where('role', 'admin')
+            ->pluck('id')
+            ->all();
+
+        if (! $adminIds) {
+            return;
+        }
+
+        $lotLabel = '#LOT-' . str_pad((string) $lot->id, 4, '0', STR_PAD_LEFT);
+        $sellerName = $lot->seller?->name
+            ?? DB::table('users')->where('id', $lot->seller_id)->value('name')
+            ?? 'Seller';
+
+        $title = match ($decision) {
+            'approve' => 'QC Approved Lot',
+            'reject' => 'QC Rejected Lot',
+            default => 'QC Requested Modification',
+        };
+
+        $message = match ($decision) {
+            'approve' => "QC approved {$lotLabel} submitted by {$sellerName}.",
+            'reject' => "QC rejected {$lotLabel} submitted by {$sellerName}.",
+            default => "QC requested modifications for {$lotLabel} submitted by {$sellerName}.",
+        };
+
+        $type = match ($decision) {
+            'approve' => 'success',
+            'reject' => 'danger',
+            default => 'warning',
+        };
+
+        $url = route('admin.lot-details', ['lot' => $lot->id]);
+
+        foreach ($adminIds as $adminId) {
+            $alreadyNotified = AppNotification::query()
+                ->where('admin_id', $adminId)
+                ->where('data->lot_id', $lot->id)
+                ->where('data->event', 'qc_decision_admin')
+                ->where('data->decision', $decision)
+                ->exists();
+
+            if ($alreadyNotified) {
+                continue;
+            }
+
+            AppNotification::create([
+                'admin_id' => $adminId,
+                'title' => $title,
+                'message' => $message,
+                'type' => $type,
+                'data' => [
+                    'lot_id' => $lot->id,
+                    'event' => 'qc_decision_admin',
+                    'decision' => $decision,
+                    'url' => $url,
+                ],
+            ]);
+        }
+    }
+
+    private function notifyTargetBuyersDecision(Lot $lot, string $decision): void
+    {
+        if (! Schema::hasTable('app_notifications') || ! Schema::hasColumn('app_notifications', 'user_id')) {
+            return;
+        }
+
+        $buyerIds = $this->resolveTargetBuyerIdsForLot($lot);
+
+        if (! $buyerIds) {
+            return;
+        }
+
+        $lotLabel = '#LOT-' . str_pad((string) $lot->id, 4, '0', STR_PAD_LEFT);
+
+        $title = match ($decision) {
+            'approve' => 'New Lot Is Auction Ready',
+            'reject' => 'Lot Update',
+            default => 'Lot Updated By QC',
+        };
+
+        $message = match ($decision) {
+            'approve' => "{$lotLabel} is approved by QC and is moving to auction setup.",
+            'reject' => "{$lotLabel} did not pass QC at this stage.",
+            default => "{$lotLabel} was updated by QC and may be resubmitted soon.",
+        };
+
+        $type = match ($decision) {
+            'approve' => 'success',
+            'reject' => 'warning',
+            default => 'info',
+        };
+
+        $url = route('buyer.upcoming-auction');
+
+        foreach ($buyerIds as $buyerId) {
+            $alreadyNotified = AppNotification::query()
+                ->where('user_id', $buyerId)
+                ->where('data->lot_id', $lot->id)
+                ->where('data->event', 'qc_decision_buyer')
+                ->where('data->decision', $decision)
+                ->exists();
+
+            if ($alreadyNotified) {
+                continue;
+            }
+
+            AppNotification::create([
+                'user_id' => $buyerId,
+                'title' => $title,
+                'message' => $message,
+                'type' => $type,
+                'data' => [
+                    'lot_id' => $lot->id,
+                    'event' => 'qc_decision_buyer',
+                    'decision' => $decision,
+                    'url' => $url,
+                ],
+            ]);
+        }
+    }
+
+    private function notifySellerAuctionScheduled(Lot $lot): void
+    {
+        if (! Schema::hasTable('app_notifications') || ! Schema::hasColumn('app_notifications', 'user_id')) {
+            return;
+        }
+
+        if (! $lot->seller_id) {
+            return;
+        }
+
+        $alreadyNotified = AppNotification::query()
+            ->where('user_id', $lot->seller_id)
+            ->where('data->lot_id', $lot->id)
+            ->where('data->event', 'qc_scheduled_seller')
+            ->exists();
+
+        if ($alreadyNotified) {
+            return;
+        }
+
+        $lotLabel = '#LOT-' . str_pad((string) $lot->id, 4, '0', STR_PAD_LEFT);
+        $startLabel = $lot->auction_start_at
+            ? Carbon::parse($lot->auction_start_at)->format('M d, Y h:i A')
+            : 'scheduled time';
+
+        AppNotification::create([
+            'user_id' => $lot->seller_id,
+            'title' => 'Auction Scheduled',
+            'message' => "{$lotLabel} is scheduled for {$startLabel}.",
+            'type' => 'success',
+            'data' => [
+                'lot_id' => $lot->id,
+                'event' => 'qc_scheduled_seller',
+                'url' => route('seller.approve-lots'),
+            ],
+        ]);
+    }
+
+    private function notifyAdminAuctionScheduled(Lot $lot): void
+    {
+        if (! Schema::hasTable('app_notifications') || ! Schema::hasColumn('app_notifications', 'admin_id')) {
+            return;
+        }
+
+        $adminIds = Admin::query()
+            ->where('role', 'admin')
+            ->pluck('id')
+            ->all();
+
+        if (! $adminIds) {
+            return;
+        }
+
+        $lotLabel = '#LOT-' . str_pad((string) $lot->id, 4, '0', STR_PAD_LEFT);
+        $sellerName = $lot->seller?->name
+            ?? DB::table('users')->where('id', $lot->seller_id)->value('name')
+            ?? 'Seller';
+        $startLabel = $lot->auction_start_at
+            ? Carbon::parse($lot->auction_start_at)->format('M d, Y h:i A')
+            : 'scheduled time';
+
+        foreach ($adminIds as $adminId) {
+            $alreadyNotified = AppNotification::query()
+                ->where('admin_id', $adminId)
+                ->where('data->lot_id', $lot->id)
+                ->where('data->event', 'qc_scheduled_admin')
+                ->exists();
+
+            if ($alreadyNotified) {
+                continue;
+            }
+
+            AppNotification::create([
+                'admin_id' => $adminId,
+                'title' => 'Auction Scheduled',
+                'message' => "{$lotLabel} from {$sellerName} is scheduled for {$startLabel}.",
+                'type' => 'success',
+                'data' => [
+                    'lot_id' => $lot->id,
+                    'event' => 'qc_scheduled_admin',
+                    'url' => route('admin.lot-details', ['lot' => $lot->id]),
+                ],
+            ]);
+        }
+    }
+
+    private function notifyTargetBuyersAuctionScheduled(Lot $lot): void
+    {
+        if (! Schema::hasTable('app_notifications') || ! Schema::hasColumn('app_notifications', 'user_id')) {
+            return;
+        }
+
+        $buyerIds = $this->resolveTargetBuyerIdsForLot($lot);
+
+        if (! $buyerIds) {
+            return;
+        }
+
+        $lotLabel = '#LOT-' . str_pad((string) $lot->id, 4, '0', STR_PAD_LEFT);
+        $startLabel = $lot->auction_start_at
+            ? Carbon::parse($lot->auction_start_at)->format('M d, Y h:i A')
+            : 'scheduled time';
+
+        foreach ($buyerIds as $buyerId) {
+            $alreadyNotified = AppNotification::query()
+                ->where('user_id', $buyerId)
+                ->where('data->lot_id', $lot->id)
+                ->where('data->event', 'qc_scheduled_buyer')
+                ->exists();
+
+            if ($alreadyNotified) {
+                continue;
+            }
+
+            AppNotification::create([
+                'user_id' => $buyerId,
+                'title' => 'Auction Scheduled',
+                'message' => "{$lotLabel} is scheduled to go live on {$startLabel}.",
+                'type' => 'info',
+                'data' => [
+                    'lot_id' => $lot->id,
+                    'event' => 'qc_scheduled_buyer',
+                    'url' => route('buyer.upcoming-auction'),
+                ],
+            ]);
+        }
+    }
+
+    private function resolveTargetBuyerIdsForLot(Lot $lot): array
+    {
+        $buyerIds = AppNotification::query()
+            ->whereNotNull('user_id')
+            ->where('data->lot_id', $lot->id)
+            ->where('data->event', 'new_lot_added')
+            ->pluck('user_id')
+            ->unique()
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+
+        if ($buyerIds) {
+            return $buyerIds;
+        }
+
+        return $this->fallbackBuyerIdsForLotDecision($lot);
+    }
+
+    private function fallbackBuyerIdsForLotDecision(Lot $lot): array
+    {
+        $buyers = User::query()
+            ->where('type', 'buyer')
+            ->get(['id', 'interested_in']);
+
+        if ($buyers->isEmpty()) {
+            return [];
+        }
+
+        $allBuyerIds = $buyers->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $interestHint = $this->inferBuyerInterestHintForLot($lot);
+
+        $interestMatched = $buyers
+            ->filter(function (User $buyer) use ($interestHint) {
+                $values = $this->decodeJsonArray($buyer->interested_in ?? null);
+                $interests = collect($values)
+                    ->map(fn ($value) => Str::lower(trim((string) $value)))
+                    ->filter()
+                    ->values();
+
+                if ($interests->isEmpty()) {
+                    return false;
+                }
+
+                if ($interests->contains('both')) {
+                    return true;
+                }
+
+                return $interestHint ? $interests->contains($interestHint) : false;
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $speciesMatched = [];
+        if (filled($lot->species)) {
+            $speciesMatched = DB::table('bids')
+                ->join('lots', 'lots.id', '=', 'bids.lot_id')
+                ->whereIn('bids.buyer_id', $allBuyerIds)
+                ->whereRaw('LOWER(lots.species) = ?', [Str::lower(trim((string) $lot->species))])
+                ->distinct()
+                ->pluck('bids.buyer_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
+        $targeted = array_values(array_unique(array_merge($interestMatched, $speciesMatched)));
+
+        return $targeted ?: $allBuyerIds;
+    }
+
+    private function inferBuyerInterestHintForLot(Lot $lot): ?string
+    {
+        $text = Str::lower(trim(implode(' ', array_filter([
+            (string) ($lot->title ?? ''),
+            (string) ($lot->species ?? ''),
+            (string) ($lot->notes ?? ''),
+            (string) ($lot->storage_temperature ?? ''),
+        ]))));
+
+        if ($text === '') {
+            return null;
+        }
+
+        if (Str::contains($text, ['frozen', 'iqf'])) {
+            return 'frozen';
+        }
+
+        if (Str::contains($text, ['fresh', 'ice', 'chilled'])) {
+            return 'fresh';
+        }
+
+        return null;
+    }
+
+    private function decodeJsonArray(mixed $value): array
+    {
+        if (is_array($value)) {
+            return array_values(array_filter($value, fn ($item) => filled($item)));
+        }
+
+        if (! is_string($value) || trim($value) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded)
+            ? array_values(array_filter($decoded, fn ($item) => filled($item)))
+            : [];
     }
 
     public function notifications(): View

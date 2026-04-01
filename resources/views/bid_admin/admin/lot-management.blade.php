@@ -1,302 +1,269 @@
-﻿@include('bid_admin.admin.include.header')
-
+@include('bid_admin.admin.include.header')
 @include('bid_admin.admin.include.side_menu')
 
-<!-- Page Wrapper -->
-      <div class="page-wrapper">
-         <div class="content container-fluid">
-            <div class="status-header d-flex flex-wrap justify-content-between align-items-center">
-               <div class="d-flex align-items-center gap-4">
-                  <div class="small">
-                     <i class="bi bi-circle-fill text-success me-1"></i> SYSTEM STATUS: <strong>LIVE</strong>
-                  </div>
-                  <div class="small">
-                     <i class="bi bi-circle-fill text-danger me-1"></i> <strong>6</strong> Live Auctions
-                  </div>
-                  <div class="small">
-                     <i class="bi bi-circle-fill text-warning me-1"></i> <strong>3</strong> Upcoming
-                  </div>
-                  <div class="small">
-                     <i class="bi bi-circle-fill text-success me-1"></i> <strong>$12,450</strong> Revenue Today
-                  </div>
-               </div>
-               <div class="fw-bold">
-                  48 <span class="text-muted fw-normal">Buyers Online</span>
-               </div>
-            </div>
-            
+<div class="page-wrapper admin-lot-management-page">
+    <div class="content container-fluid">
+        <style>
+            .admin-lot-management-page .content.container-fluid { padding-top: 10px !important; }
+            .management-shell {
+                background: linear-gradient(180deg, rgba(5, 145, 215, 0.12), rgba(23, 120, 191, 0.08));
+                border-radius: 24px;
+                padding: 18px;
+            }
+            .status-strip {
+                background: linear-gradient(135deg, rgba(13, 95, 149, 0.72), rgba(24, 126, 188, 0.58));
+                border: 1px solid rgba(255,255,255,.12);
+                border-radius: 18px;
+                padding: 14px 22px;
+                box-shadow: 0 18px 40px rgba(8, 57, 94, 0.16);
+                backdrop-filter: blur(8px);
+            }
+            .status-pill, .buyers-online-pill {
+                color: #f8fbff;
+                font-size: 15px;
+                font-weight: 600;
+                display: inline-flex;
+                align-items: center;
+                white-space: nowrap;
+            }
+            .status-pill strong, .buyers-online-pill strong { color: #fff; font-weight: 800; }
+            .buyers-online-pill { font-size: 17px; font-weight: 700; }
+            .status-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 999px;
+                display: inline-block;
+                margin-right: 8px;
+                box-shadow: 0 0 0 3px rgba(255,255,255,.08);
+            }
+            .page-head-card, .lot-filter-card, .table-glass {
+                background: rgba(248, 251, 255, 0.90);
+                border-radius: 22px;
+                box-shadow: 0 16px 35px rgba(15,23,42,.08);
+                border: 1px solid rgba(255,255,255,.45);
+                backdrop-filter: blur(10px);
+            }
+            .page-head-card, .lot-filter-card {
+                padding: 18px;
+                margin-bottom: 18px;
+            }
+            .table-glass {
+                padding: 16px;
+            }
+            .lotfish {
+                width: 54px;
+                height: 54px;
+                object-fit: cover;
+                border-radius: 12px;
+                border: 1px solid rgba(15,23,42,.08);
+            }
+            .action-buttons {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            .status-badge {
+                display: inline-flex;
+                align-items: center;
+                border-radius: 999px;
+                padding: 6px 12px;
+                font-size: 12px;
+                font-weight: 700;
+                color: #fff;
+            }
+            .status-active { background: #16a34a; }
+            .status-ended, .status-sold, .status-unsold { background: #6b7280; }
+            .status-draft, .status-needs-modification { background: #f59e0b; color: #111827; }
+            .status-pending-qc, .status-pending-payment { background: #eab308; color: #111827; }
+            .status-approved, .status-scheduled-auction, .status-scheduled { background: #3b82f6; }
+            .status-rejected { background: #ef4444; }
+            .empty-state {
+                text-align: center;
+                color: #4b5563;
+                padding: 40px 20px;
+            }
+            .filter-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+            .filter-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 7px 12px;
+                border-radius: 999px;
+                background: rgba(59, 130, 246, 0.10);
+                color: #1e3a8a;
+                font-size: 12px;
+                font-weight: 700;
+            }
+            .filter-help {
+                color: #475569;
+                font-size: 13px;
+                margin-bottom: 0;
+            }
+        </style>
 
-            <div class="page-header">
-    <div class="row align-items-center">
-      <div class="col">
-        <h1 class="page-title">Lot Management</h1>
-        <p class="text-muted">Manage and analyze Auction lot</p>
-      </div>
-      <div class="col-auto">
-         
-        <a href="{{ route('admin.create-lot') }}" class="btn btn-primary">
-          <i class="fe fe-plus me-2"></i>Create New Lot
-        </a>
-      </div>
-    </div>
-  </div>
-  
-  <div class="card p-3 mb-4">
-            <div class="row">
-               <div class="col-lg-3">
-                <select class="form-select">
-                    <option>
-                        Species
-                    </option>
-                    <option>
-                        Shrimps
-                    </option>
-                    <option>
-                        Fish
-                    </option>
-                </select> 
-               </div>
-               <div class="col-lg-2">
-                <select class="form-select">
-                    <option>
-                        Status
-                    </option>
-                    <option>
-                        Active
-                    </option>
-                    <option>
-                        Ended
-                    </option>
-                    <option>
-                        Draft
-                    </option>
-                    <option>
-                        Suspended
-                    </option>
-                </select> 
-               </div>
-               <div class="col-lg-3">
-                <select class="form-select">
-                    <option>
-                        Seller
-                    </option>
-                    <option>
-                        SAGAL CLEM
-                    </option>
-                    <option>
-                        Harnai Market
-                    </option>
-                </select> 
+        <div class="management-shell">
+            <div class="status-strip d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div class="d-flex flex-wrap align-items-center gap-4">
+                    <div class="status-pill"><span class="status-dot {{ $systemStatus === 'LIVE' ? 'bg-success' : 'bg-secondary' }}"></span>SYSTEM STATUS: <strong class="ms-1">{{ $systemStatus }}</strong></div>
+                    <div class="status-pill"><span class="status-dot bg-danger"></span><strong>{{ $liveAuctionsCount }}</strong><span class="ms-1">Live Auctions</span></div>
+                    <div class="status-pill"><span class="status-dot bg-warning"></span><strong>{{ $upcomingAuctionsCount }}</strong><span class="ms-1">Upcoming</span></div>
+                    <div class="status-pill"><span class="status-dot bg-success"></span><strong>${{ number_format($revenueToday, 2) }}</strong><span class="ms-1">Revenue Today</span></div>
                 </div>
-                <div class="col-lg-2">
-                <input class="form-control" type="date">
-                 </div>
-                 <div class="col-lg-2">
-                 <button class="btn btn-primary">Filter</button>
-                 </div>
+                <div class="buyers-online-pill"><strong>{{ number_format($registeredBuyersCount) }}</strong> Buyers Online</div>
             </div>
-        </div><!-- Auction Table -->
-    
-   <!-- ================= TABLE VIEW ================= -->
-        <div class="table-glass" id="tableView">
-             
-            <div class="table-responsive">
-                <table class="table table-striped" id="userTable">
-                    <thead>
-                    <tr>
-                        <th>Lot</th>
-                        <th>Seller</th>
-                        <th>Starting Price</th>
-                        <th>Increment</th>
-                        <th>End Date</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                    <tbody>
-                        <tr>
-                        <td>
-                           <div class="d-flex align-items-center gap-3">
-                              <img src="https://loremflickr.com/cache/resized/532_32680198402_77f1cd591e_400_300_nofilter.jpg" class="lotfish"/>
-                              <span>Frozen Tiger Shrimps</span>
-                           </div>
-                        </td>
-                        <td>SAGAL CLEM</td>
-                        <td>$21000</td>
-                        <td>$500</td>
-                        <td>2026-01-10 18:00</td>
-                        <td><span class="badge badge-active text-white">Active</span></td>
-                        <td>
-                            <div class="action-buttons">
-                                             <a href="{{ route('admin.lot-details') }}" class="btn btn-sm btn-primary" title="View"><i class="bi bi-eye"></i></a>
-                                             <a href="#" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></a>
-                                             <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash3"></i></button>
-                                          </div>                             
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                           <div class="d-flex align-items-center gap-3">
-                              <img src="https://loremflickr.com/cache/resized/532_32680198402_77f1cd591e_400_300_nofilter.jpg" class="lotfish"/>
-                              <span>Dry Fish Premium</span>
-                           </div>
-                        </td>
-                        
-                        <td>Harnai Market</td>
-                        <td>$8000</td>
-                        <td>$200</td>
-                        <td>2026-01-05 16:00</td>
-                        <td><span class="badge badge-ended text-white">Ended</span></td>
-                        <td>
-                           <div class="action-buttons">
-                                             <a href="{{ route('admin.lot-details') }}" class="btn btn-sm btn-primary" title="View"><i class="bi bi-eye"></i></a>
-                                             <a href="#" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></a>
-                                             <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash3"></i></button>
-                                          </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        
-                        <td>
-                           <div class="d-flex align-items-center gap-3">
-                              <img src="https://loremflickr.com/cache/resized/532_32680198402_77f1cd591e_400_300_nofilter.jpg" class="lotfish"/>
-                              <span>Gold Fish Bulk</span>
-                           </div>
-                        </td>
-                        <td>Seller Kumar</td>
-                        <td>$5000</td>
-                        <td>$100</td>
-                        <td>2026-01-12 12:00</td>
-                        <td><span class="badge badge-draft text-white">Draft</span></td>
-                        <td>
-                           <div class="action-buttons">
-                                             <a href="{{ route('admin.lot-details') }}" class="btn btn-sm btn-primary" title="View"><i class="bi bi-eye"></i></a>
-                                             <a href="#" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></a>
-                                             <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash3"></i></button>
-                                          </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                           <div class="d-flex align-items-center gap-3">
-                              <img src="https://loremflickr.com/cache/resized/532_32680198402_77f1cd591e_400_300_nofilter.jpg" class="lotfish"/>
-                              <span>Head On Tiger Shrimps</span>
-                           </div>
-                        </td>
-                        <td>SAGAL CLEM</td>
-                        <td>$25000</td>
-                        <td>$600</td>
-                        <td>2026-01-20 15:00</td>
-                        <td><span class="badge badge-active text-white">Active</span></td>
-                        <td>
-                           <div class="action-buttons">
-                                             <a href="{{ route('admin.lot-details') }}" class="btn btn-sm btn-primary" title="View"><i class="bi bi-eye"></i></a>
-                                             <a href="#" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></a>
-                                             <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash3"></i></button>
-                                          </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                           <div class="d-flex align-items-center gap-3">
-                              <img src="https://loremflickr.com/cache/resized/532_32680198402_77f1cd591e_400_300_nofilter.jpg" class="lotfish"/>
-                              <span>Mixed Fish Lot</span>
-                           </div>
-                        </td>
-                        <td>Harnai Market</td>
-                        <td>$12000</td>
-                        <td>$300</td>
-                        <td>2026-01-18 11:00</td>
-                        <td><span class="badge badge-suspended text-white">Suspended</span></td>
-                        <td>
-                           <div class="action-buttons">
-                                             <a href="{{ route('admin.lot-details') }}" class="btn btn-sm btn-primary" title="View"><i class="bi bi-eye"></i></a>
-                                             <a href="#" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></a>
-                                             <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash3"></i></button>
-                                          </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                           <div class="d-flex align-items-center gap-3">
-                              <img src="https://loremflickr.com/cache/resized/532_32680198402_77f1cd591e_400_300_nofilter.jpg" class="lotfish"/>
-                              <span>Premium Lobster</span>
-                           </div>
-                        </td>
-                        <td>Ocean Traders</td>
-                        <td>$40000</td>
-                        <td>$1000</td>
-                        <td>2026-01-25 19:00</td>
-                        <td><span class="badge badge-active text-white">Active</span></td>
-                        <td>
-                           <div class="action-buttons">
-                                             <a href="{{ route('admin.lot-details') }}" class="btn btn-sm btn-primary" title="View"><i class="bi bi-eye"></i></a>
-                                             <a href="#" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></a>
-                                             <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash3"></i></button>
-                                          </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                           <div class="d-flex align-items-center gap-3">
-                              <img src="https://loremflickr.com/cache/resized/532_32680198402_77f1cd591e_400_300_nofilter.jpg" class="lotfish"/>
-                              <span>Requin Special</span>
-                           </div>
-                        </td>
-                        <td>SAGAL CLEM</td>
-                        <td>$30000</td>
-                        <td>$700</td>
-                        <td>2026-01-30 14:00</td>
-                        <td><span class="badge badge-ended text-white">Ended</span></td>
-                        <td>
-                           <div class="action-buttons">
-                                             <a href="{{ route('admin.lot-details') }}" class="btn btn-sm btn-primary" title="View"><i class="bi bi-eye"></i></a>
-                                             <a href="#" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></a>
-                                             <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash3"></i></button>
-                                          </div>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+
+            <div class="page-head-card">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h1 class="page-title mb-1">Lot Management</h1>
+                        <p class="text-muted mb-0">Manage and analyze auction lots</p>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{{ route('admin.create-lot') }}" class="btn btn-primary">
+                            <i class="fe fe-plus me-2"></i>Create New Lot
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lot-filter-card">
+                @php
+                    $selectedSellerName = collect($sellerOptions)->firstWhere('id', (int) request('seller'))?->name;
+                @endphp
+                <div class="filter-meta">
+                    <span class="filter-chip">Species: {{ $speciesOptions->count() }}</span>
+                    <span class="filter-chip">Statuses: {{ $statusOptions->count() }}</span>
+                    <span class="filter-chip">Sellers: {{ $sellerOptions->count() }}</span>
+                    @if(request('species'))
+                        <span class="filter-chip">Selected Species: {{ request('species') }}</span>
+                    @endif
+                    @if(request('status'))
+                        <span class="filter-chip">Selected Status: {{ ucwords(request('status')) }}</span>
+                    @endif
+                    @if($selectedSellerName)
+                        <span class="filter-chip">Selected Seller: {{ $selectedSellerName }}</span>
+                    @endif
+                    @if(request('date'))
+                        <span class="filter-chip">Selected Date: {{ request('date') }}</span>
+                    @endif
+                </div>
+                <p class="filter-help">Filters are loaded dynamically from current lots and seller records.</p>
+                <form method="GET" action="{{ route('admin.lot-management') }}">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-lg-3">
+                            <label class="form-label">Species</label>
+                            <select class="form-select" name="species">
+                                <option value="">All Species ({{ $speciesOptions->count() }})</option>
+                                @foreach($speciesOptions as $speciesOption)
+                                    <option value="{{ $speciesOption }}" {{ request('species') === $speciesOption ? 'selected' : '' }}>{{ $speciesOption }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-lg-2">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status">
+                                <option value="">All Status ({{ $statusOptions->count() }})</option>
+                                @foreach($statusOptions as $statusOption)
+                                    <option value="{{ $statusOption }}" {{ request('status') === $statusOption ? 'selected' : '' }}>{{ ucwords($statusOption) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-lg-3">
+                            <label class="form-label">Seller</label>
+                            <select class="form-select" name="seller">
+                                <option value="">All Sellers ({{ $sellerOptions->count() }})</option>
+                                @foreach($sellerOptions as $sellerOption)
+                                    <option value="{{ $sellerOption->id }}" {{ (string) request('seller') === (string) $sellerOption->id ? 'selected' : '' }}>{{ $sellerOption->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-lg-2">
+                            <label class="form-label">End Date</label>
+                            <input class="form-control" type="date" name="date" value="{{ request('date') }}">
+                        </div>
+                        <div class="col-lg-2 d-flex gap-2">
+                            <button class="btn btn-primary" type="submit">Filter</button>
+                            <a class="btn btn-outline-secondary" href="{{ route('admin.lot-management') }}">Reset</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-glass">
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Lot</th>
+                                <th>Seller</th>
+                                <th>Starting Price</th>
+                                <th>Increment</th>
+                                <th>End Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($lots as $lot)
+                                @php
+                                    $statusKey = str_replace(' ', '-', strtolower(trim($lot->status ?? 'draft')));
+                                @endphp
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <img src="{{ $lot->image_url }}" class="lotfish" alt="{{ $lot->title ?? ($lot->species ?? 'Lot image') }}">
+                                            <div>
+                                                <div class="fw-semibold">{{ $lot->title ?? ($lot->species ?? 'Auction Lot') }}</div>
+                                                <small class="text-muted">#LOT-{{ str_pad((string) $lot->id, 4, '0', STR_PAD_LEFT) }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ $lot->seller?->name ?? 'Seller' }}</td>
+                                    <td>${{ number_format((float) ($lot->starting_price ?? 0), 2) }}</td>
+                                    <td>${{ number_format((float) ($lot->increment_amount ?? 0), 2) }}</td>
+                                    <td>{{ optional($lot->auction_end_at)->format('Y-m-d H:i') ?? 'Not scheduled' }}</td>
+                                    <td><span class="status-badge status-{{ $statusKey }}">{{ ucwords($lot->status ?? 'Draft') }}</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <a href="{{ route('admin.lot-details', ['lot' => $lot->id]) }}" class="btn btn-sm btn-primary" title="View"><i class="bi bi-eye"></i></a>
+                                            <a href="{{ route('admin.edit-lot', ['lot' => $lot->id]) }}" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></a>
+                                            @if(($lot->bids_count ?? 0) > 0)
+                                                <button class="btn btn-sm btn-secondary" type="button" title="Cannot delete because bids already exist" disabled><i class="bi bi-trash3"></i></button>
+                                            @else
+                                                <form method="POST" action="{{ route('admin.delete-lot', ['lot' => $lot->id]) }}" onsubmit="return confirm('Are you sure you want to delete this lot?')" class="d-inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="btn btn-sm btn-danger" type="submit" title="Delete"><i class="bi bi-trash3"></i></button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                        @if(($lot->bids_count ?? 0) > 0)
+                                            <small class="d-block text-muted mt-1">Delete locked: {{ $lot->bids_count }} bid(s)</small>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="empty-state">No lots found for the selected filters.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if(method_exists($lots, 'links'))
+                    <div class="d-flex justify-content-center mt-4">
+                        {{ $lots->links() }}
+                    </div>
+                @endif
             </div>
         </div>
-        </div><!-- ================= KANBAN VIEW ================= -->
-        
-   
-
-         </div>
-      </div>
-   </div><!-- /Page Wrapper -->
-
-<!-- jQuery -->
-      <!-- Bootstrap Core JS -->
-      <!-- Feather Icon JS -->
-      <!-- Slimscroll JS -->
-      <!-- Theme Settings JS -->
-      <!-- Custom JS -->
-      <!-- Datatable JS -->
-      <script src="https://cdn.datatables.net/2.2.1/js/dataTables.js"  type="text/javascript"></script>
-      <script src="https://cdn.datatables.net/2.2.1/js/dataTables.bootstrap5.js"  type="text/javascript"></script>
-      <script src="https://cdn.datatables.net/buttons/3.2.0/js/dataTables.buttons.js"  type="text/javascript"></script>
-      <script src="https://cdn.datatables.net/buttons/3.2.0/js/buttons.dataTables.js"  type="text/javascript"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"  type="text/javascript"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"  type="text/javascript"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"  type="text/javascript"></script>
-      <script src="https://cdn.datatables.net/buttons/3.2.0/js/buttons.html5.min.js"  type="text/javascript"></script>
-      <script src="https://cdn.datatables.net/buttons/3.2.0/js/buttons.print.min.js"  type="text/javascript"></script>
-      <!-- Feather Icon JS -->
-      <script>
-         // Initialize DataTable with enhanced features
-         $(document).ready(function() {
-            $('#userTable').DataTable({
-               pageLength: 10,
-               order: [[0, 'asc']],
-               responsive: true
-               
-              
-            });
-         });
-      </script>
+    </div>
+</div>
 
 @include('bid_admin.admin.include.footer')
-

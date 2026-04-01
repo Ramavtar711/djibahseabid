@@ -5,12 +5,12 @@
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta name="csrf-token" content="{{ csrf_token() }}">
       <title>Auction</title>
-      <link rel="shortcut icon" href="assets/img/favicon.png">
-      <link rel="stylesheet" href="assets/css/bootstrap.min.css">
-      <link rel="stylesheet" href="assets/plugins/fontawesome/css/fontawesome.min.css">
-      <link rel="stylesheet" href="assets/plugins/fontawesome/css/all.min.css">
-      <link rel="stylesheet" href="assets/plugins/feather/feather.css">
-      <link rel="stylesheet" href="assets/css/bootstrap-datetimepicker.min.css">
+      <link rel="shortcut icon" href="{{ asset('assets/img/favicon.png') }}">
+      <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
+      <link rel="stylesheet" href="{{ asset('assets/plugins/fontawesome/css/fontawesome.min.css') }}">
+      <link rel="stylesheet" href="{{ asset('assets/plugins/fontawesome/css/all.min.css') }}">
+      <link rel="stylesheet" href="{{ asset('assets/plugins/feather/feather.css') }}">
+      <link rel="stylesheet" href="{{ asset('assets/css/bootstrap-datetimepicker.min.css') }}">
       <link rel="stylesheet" href="https://cdn.datatables.net/2.2.1/css/dataTables.dataTables.css">
       <link rel="stylesheet" href="https://cdn.datatables.net/buttons/3.2.0/css/buttons.dataTables.css">
 @php
@@ -24,25 +24,25 @@
       ->take(2)
       ->implode('');
 @endphp
-      <link rel="stylesheet" href="assets/css/style.css">
-      <script src="assets/js/layout.js" type="text/javascript"></script>
+      <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+      <script src="{{ asset('assets/js/layout.js') }}" type="text/javascript"></script>
       <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
    </head>
    <body class="mini-sidebar">
       <div class="main-wrapper">
          <div class="header header-one">
             <a href="{{ route('admin.dashboard') }}" class="d-inline-flex d-sm-inline-flex align-items-center d-md-inline-flex d-lg-none align-items-center device-logo">
-               <img src="assets/img/logo-small.png" class="img-fluid logo2" alt="Logo" style="width:50px">
+               <img src="{{ asset('assets/img/logo-small.png') }}" class="img-fluid logo2" alt="Logo" style="width:50px">
             </a>
             <div class="main-logo d-inline float-start d-lg-flex align-items-center d-none d-sm-none d-md-none">
                <div class="logo-color">
                   <a href="{{ route('admin.dashboard') }}">
                      <div class="d-flex gap-2 align-items-center">
-                        <img src="assets/img/logo-small.png" class="img-fluid logo-blue" alt="Logo" style="width:50px !important">
+                        <img src="{{ asset('assets/img/logo-small.png') }}" class="img-fluid logo-blue" alt="Logo" style="width:50px !important">
                      </div>
                   </a>
                   <a href="{{ route('admin.dashboard') }}">
-                     <img src="assets/img/logo-small.png" class="img-fluid logo-small" alt="Logo">
+                     <img src="{{ asset('assets/img/logo-small.png') }}" class="img-fluid logo-small" alt="Logo">
                   </a>
                </div>
             </div>
@@ -56,7 +56,7 @@
             </a>
             <div class="top-nav-search">
                <div class="d-flex align-items-center">
-                  <img src="assets/img/logo-small.png" class="img-fluid" alt="Djibah SeaBid Logo" style="max-width: 50px;">
+                  <img src="{{ asset('assets/img/logo-small.png') }}" class="img-fluid" alt="Djibah SeaBid Logo" style="max-width: 50px;">
                   <h4 class="logo-text">Djibah SeaBid</h4>
                </div>
             </div>
@@ -67,12 +67,12 @@
                <div class="d-flex align-items-center">
                   <div class="nav-item dropdown has-arrow flag-nav me-2">
                      <a class="btn btn-menubar" data-bs-toggle="dropdown" href="javascript:void(0);" role="button" aria-expanded="false">
-                        <img src="assets/img/flags/us.svg" alt="Language" class="img-fluid">
+                        <img src="{{ asset('assets/img/flags/us.svg') }}" alt="Language" class="img-fluid">
                      </a>
                      <ul class="dropdown-menu p-2">
-                        <li><a href="javascript:void(0);" class="dropdown-item"><img src="assets/img/flags/us.svg" alt="flag" class="me-2">English</a></li>
-                        <li><a href="javascript:void(0);" class="dropdown-item"><img src="assets/img/flags/fr.svg" alt="flag" class="me-2">French</a></li>
-                        <li><a href="javascript:void(0);" class="dropdown-item"><img src="assets/img/flags/ae.svg" alt="flag" class="me-2">Arabic</a></li>
+                        <li><a href="javascript:void(0);" class="dropdown-item"><img src="{{ asset('assets/img/flags/us.svg') }}" alt="flag" class="me-2">English</a></li>
+                        <li><a href="javascript:void(0);" class="dropdown-item"><img src="{{ asset('assets/img/flags/fr.svg') }}" alt="flag" class="me-2">French</a></li>
+                        <li><a href="javascript:void(0);" class="dropdown-item"><img src="{{ asset('assets/img/flags/ae.svg') }}" alt="flag" class="me-2">Arabic</a></li>
                      </ul>
                   </div>
 
