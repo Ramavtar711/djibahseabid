@@ -164,6 +164,10 @@
                            <i class="isax isax-profile-circle me-2"></i>Profile Settings
                         </a>
 
+                        <a class="dropdown-item d-flex align-items-center" href="{{ route('admin.change-password') }}">
+                           <i class="isax isax-lock me-2"></i>Update Password
+                        </a>
+
                         <hr class="dropdown-divider my-2">
 
                         <a class="dropdown-item logout d-flex align-items-center" href="{{ route('admin.login') }}">

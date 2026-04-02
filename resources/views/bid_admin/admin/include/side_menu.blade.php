@@ -28,11 +28,11 @@
                      <li class="menu-title"><span>USERS</span></li>
 
                      <li>
-                        <a href="{{ route('admin.buyers') }}" class="{{ request()->routeIs('admin.buyers', 'admin.buyer-details', 'admin.add-buyer') ? 'active' : '' }}"><i class="bi bi-person"></i> <span> Buyers</span> </a>
+                        <a href="{{ route('admin.buyers') }}" class="{{ request()->routeIs('admin.buyers', 'admin.buyer-details', 'admin.add-buyer', 'admin.edit-buyer') ? 'active' : '' }}"><i class="bi bi-person"></i> <span> Buyers</span> </a>
 
                      </li>
                      <li>
-                        <a href="{{ route('admin.sellers') }}" class="{{ request()->routeIs('admin.sellers', 'admin.seller-details', 'admin.add-seller') ? 'active' : '' }}"><i class="bi bi-person"></i> <span> Sellers</span> </a>
+                        <a href="{{ route('admin.sellers') }}" class="{{ request()->routeIs('admin.sellers', 'admin.seller-details', 'admin.add-seller', 'admin.edit-seller') ? 'active' : '' }}"><i class="bi bi-person"></i> <span> Sellers</span> </a>
 
                      </li>
 

@@ -403,15 +403,791 @@ class AdminController extends Controller
             'bidHistory' => $bidHistory,
         ]);
     }
-    public function buyers(): View { return view('bid_admin.admin.buyers'); }
-    public function buyerDetails(): View { return view('bid_admin.admin.buyer-details'); }
-    public function addBuyer(): View { return view('bid_admin.admin.add-buyer'); }
-    public function sellers(): View { return view('bid_admin.admin.sellers'); }
-    public function sellerDetails(): View { return view('bid_admin.admin.seller-details'); }
-    public function addSeller(): View { return view('bid_admin.admin.add-seller'); }
+    public function buyers(): View
+    {
+        $dashboardData = $this->buildDashboardData();
+
+        $buyers = User::query()
+            ->where('type', 'buyer')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function (User $buyer) {
+                $buyer->normalized_status = Str::lower(trim((string) ($buyer->status ?: 'pending')));
+                $buyer->profile_image_url = $buyer->profile_image
+                    ? asset('storage/' . ltrim((string) $buyer->profile_image, '/'))
+                    : 'https://via.placeholder.com/120x120?text=Buyer';
+
+                return $buyer;
+            });
+
+        return view('bid_admin.admin.buyers', array_merge($dashboardData, [
+            'buyers' => $buyers,
+        ]));
+    }
+    public function buyerDetails(Request $request): View
+    {
+        $buyerId = (int) $request->query('buyer', 0);
+
+        $buyer = User::query()
+            ->where('type', 'buyer')
+            ->findOrFail($buyerId);
+
+        $wallet = $buyer->wallet;
+        $settlements = Settlement::query()
+            ->where('buyer_id', $buyer->id)
+            ->with('lot')
+            ->latest('id')
+            ->get();
+
+        $bids = Bid::query()
+            ->where('buyer_id', $buyer->id)
+            ->with('lot')
+            ->latest('id')
+            ->get();
+
+        $walletTransactions = $wallet
+            ? $wallet->transactions()->latest('id')->take(5)->get()
+            : collect();
+
+        $totalAuctionPurchase = (float) $settlements->sum('amount');
+        $totalPaidAmount = (float) $settlements->where('status', 'paid')->sum('amount');
+        $pendingSettlement = (float) $settlements->whereIn('status', ['pending', 'processing'])->sum('amount');
+        $averageBidValue = (float) ($bids->count() > 0 ? ($bids->avg('amount') ?? 0) : 0);
+
+        $speciesStats = DB::table('bids')
+            ->join('lots', 'lots.id', '=', 'bids.lot_id')
+            ->where('bids.buyer_id', $buyer->id)
+            ->selectRaw('COALESCE(lots.species, "Unknown") as species, COUNT(*) as total_bids')
+            ->groupBy('lots.species')
+            ->orderByDesc('total_bids')
+            ->get();
+
+        $mostPurchasedFish = $speciesStats->first();
+
+        $hourCounts = $bids->groupBy(function (Bid $bid) {
+            return (int) optional($bid->created_at)->format('G');
+        })->map->count();
+
+        $mostActiveHour = $hourCounts->sortDesc()->keys()->first();
+        $preferredAuctionTime = $mostActiveHour === null
+            ? 'N/A'
+            : sprintf('%02d:00-%02d:59', $mostActiveHour, $mostActiveHour);
+
+        $activeBidsThisMonth = $bids->filter(function (Bid $bid) {
+            return optional($bid->created_at)?->isCurrentMonth();
+        })->count();
+
+        $buyerRanking = Settlement::query()
+            ->selectRaw('buyer_id, COALESCE(SUM(amount), 0) as total_amount')
+            ->whereNotNull('buyer_id')
+            ->groupBy('buyer_id')
+            ->orderByDesc('total_amount')
+            ->pluck('buyer_id')
+            ->values();
+
+        $rankingPosition = $buyerRanking->search($buyer->id);
+        $buyerRankLabel = $rankingPosition === false ? '-' : 'Top ' . ((int) $rankingPosition + 1);
+
+        $paymentReliability = $settlements->count() > 0
+            ? round(($settlements->where('status', 'paid')->count() / $settlements->count()) * 100)
+            : 0;
+
+        $recentTransactions = $settlements->take(5)->map(function (Settlement $settlement) {
+            $provider = Str::of((string) ($settlement->payment_provider ?: 'manual'))
+                ->replace('_', ' ')
+                ->title();
+
+            $settlement->provider_label = (string) $provider;
+            $settlement->status_badge_class = match (Str::lower((string) $settlement->status)) {
+                'paid' => 'bg-success',
+                'processing' => 'bg-warning text-dark',
+                'failed' => 'bg-danger',
+                default => 'bg-secondary',
+            };
+
+            return $settlement;
+        });
+
+        $auctionHistory = $bids
+            ->unique('lot_id')
+            ->take(6)
+            ->map(function (Bid $bid) use ($buyer, $settlements) {
+                $lot = $bid->lot;
+                $wonSettlement = $settlements->firstWhere('lot_id', $bid->lot_id);
+
+                return [
+                    'lot' => $lot,
+                    'bid_amount' => (float) $bid->amount,
+                    'won' => (bool) $wonSettlement,
+                    'won_amount' => (float) ($wonSettlement?->amount ?? 0),
+                ];
+            })
+            ->filter(fn ($item) => $item['lot'])
+            ->values();
+
+        $auctionsParticipated = $bids->pluck('lot_id')->unique()->count();
+        $auctionsWon = $settlements->pluck('lot_id')->unique()->count();
+        $winRate = $auctionsParticipated > 0 ? round(($auctionsWon / $auctionsParticipated) * 100) : 0;
+        $totalFishPurchased = (float) $settlements->filter(fn (Settlement $settlement) => $settlement->lot)->sum(fn (Settlement $settlement) => (float) ($settlement->lot->quantity ?? 0));
+
+        $profileImageUrl = $buyer->profile_image
+            ? asset('storage/' . ltrim((string) $buyer->profile_image, '/'))
+            : 'https://via.placeholder.com/150x150?text=Buyer';
+
+        return view('bid_admin.admin.buyer-details', [
+            'buyer' => $buyer,
+            'wallet' => $wallet,
+            'walletTransactions' => $walletTransactions,
+            'profileImageUrl' => $profileImageUrl,
+            'buyerCode' => 'BAU' . str_pad((string) $buyer->id, 4, '0', STR_PAD_LEFT),
+            'totalAuctionPurchase' => $totalAuctionPurchase,
+            'totalPaidAmount' => $totalPaidAmount,
+            'pendingSettlement' => $pendingSettlement,
+            'averageBidValue' => $averageBidValue,
+            'mostPurchasedFish' => $mostPurchasedFish,
+            'preferredAuctionTime' => $preferredAuctionTime,
+            'activeBidsThisMonth' => $activeBidsThisMonth,
+            'buyerRankLabel' => $buyerRankLabel,
+            'paymentReliability' => $paymentReliability,
+            'recentTransactions' => $recentTransactions,
+            'auctionHistory' => $auctionHistory,
+            'auctionsParticipated' => $auctionsParticipated,
+            'auctionsWon' => $auctionsWon,
+            'winRate' => $winRate,
+            'totalFishPurchased' => $totalFishPurchased,
+        ]);
+    }
+    public function addBuyer(): View
+    {
+        return view('bid_admin.admin.add-buyer', $this->buildAdminBuyerFormData());
+    }
+
+    public function storeBuyer(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['required', 'string', 'max:30'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'company_legal_name' => ['required', 'string', 'max:255'],
+            'business_type' => ['required', 'array', 'min:1'],
+            'business_type.*' => ['string', 'max:100'],
+            'job_title' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'business_address' => ['nullable', 'string', 'max:500'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'website' => ['nullable', 'string', 'max:255'],
+            'company_registration_number' => ['nullable', 'string', 'max:255'],
+            'interested_in' => ['nullable', 'array'],
+            'interested_in.*' => ['string', 'max:30'],
+            'monthly_volume' => ['nullable', 'string', 'max:50'],
+            'preferred_delivery' => ['nullable', 'array'],
+            'preferred_delivery.*' => ['string', 'max:30'],
+            'preferred_payment' => ['nullable', 'array'],
+            'preferred_payment.*' => ['string', 'max:50'],
+            'bank_country' => ['nullable', 'string', 'max:100'],
+            'company_registration_file' => ['nullable', 'file', 'max:5120'],
+            'id_file' => ['nullable', 'file', 'max:5120'],
+            'import_license_file' => ['nullable', 'file', 'max:5120'],
+        ]);
+
+        $insertData = [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'password' => Hash::make($validated['password']),
+            'job_title' => $validated['job_title'] ?? null,
+            'company_legal_name' => $validated['company_legal_name'],
+            'city' => $validated['city'] ?? null,
+            'business_address' => $validated['business_address'] ?? null,
+            'country' => $validated['country'] ?? null,
+            'website' => $validated['website'] ?? null,
+            'company_registration_number' => $validated['company_registration_number'] ?? null,
+            'business_type' => json_encode($validated['business_type']),
+            'interested_in' => isset($validated['interested_in']) ? json_encode($validated['interested_in']) : null,
+            'monthly_volume' => $validated['monthly_volume'] ?? null,
+            'preferred_delivery' => isset($validated['preferred_delivery']) ? json_encode($validated['preferred_delivery']) : null,
+            'preferred_payment' => isset($validated['preferred_payment']) ? json_encode($validated['preferred_payment']) : null,
+            'bank_country' => $validated['bank_country'] ?? null,
+            'company_registration_file' => $request->hasFile('company_registration_file')
+                ? $request->file('company_registration_file')->store('buyer-kyc', 'public')
+                : null,
+            'id_file' => $request->hasFile('id_file')
+                ? $request->file('id_file')->store('buyer-kyc', 'public')
+                : null,
+            'import_license_file' => $request->hasFile('import_license_file')
+                ? $request->file('import_license_file')->store('buyer-kyc', 'public')
+                : null,
+            'is_registered_business' => $request->boolean('is_registered_business'),
+            'accepted_terms' => $request->boolean('accepted_terms'),
+            'bank_transfer_validated' => $request->boolean('bank_transfer_validated'),
+            'type' => 'buyer',
+        ];
+
+        if (Schema::hasColumn('users', 'status')) {
+            $insertData['status'] = 'pending';
+        }
+
+        User::query()->create($insertData);
+
+        return redirect()
+            ->route('admin.buyers')
+            ->with('success', 'Buyer created successfully and marked as pending review.');
+    }
+    
+    public function editBuyer(User $buyer): View
+    {
+        abort_unless($buyer->type === 'buyer', 404);
+
+        return view('bid_admin.admin.add-buyer', $this->buildAdminBuyerFormData($buyer, true));
+    }
+
+    public function updateBuyer(Request $request, User $buyer): RedirectResponse
+    {
+        abort_unless($buyer->type === 'buyer', 404);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $buyer->id],
+            'phone' => ['required', 'string', 'max:30'],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'company_legal_name' => ['required', 'string', 'max:255'],
+            'business_type' => ['required', 'array', 'min:1'],
+            'business_type.*' => ['string', 'max:100'],
+            'job_title' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'business_address' => ['nullable', 'string', 'max:500'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'website' => ['nullable', 'string', 'max:255'],
+            'company_registration_number' => ['nullable', 'string', 'max:255'],
+            'interested_in' => ['nullable', 'array'],
+            'interested_in.*' => ['string', 'max:30'],
+            'monthly_volume' => ['nullable', 'string', 'max:50'],
+            'preferred_delivery' => ['nullable', 'array'],
+            'preferred_delivery.*' => ['string', 'max:30'],
+            'preferred_payment' => ['nullable', 'array'],
+            'preferred_payment.*' => ['string', 'max:50'],
+            'bank_country' => ['nullable', 'string', 'max:100'],
+            'company_registration_file' => ['nullable', 'file', 'max:5120'],
+            'id_file' => ['nullable', 'file', 'max:5120'],
+            'import_license_file' => ['nullable', 'file', 'max:5120'],
+        ]);
+
+        $buyer->name = $validated['name'];
+        $buyer->email = $validated['email'];
+        $buyer->phone = $validated['phone'];
+        $buyer->job_title = $validated['job_title'] ?? null;
+        $buyer->company_legal_name = $validated['company_legal_name'];
+        $buyer->city = $validated['city'] ?? null;
+        $buyer->business_address = $validated['business_address'] ?? null;
+        $buyer->country = $validated['country'] ?? null;
+        $buyer->website = $validated['website'] ?? null;
+        $buyer->company_registration_number = $validated['company_registration_number'] ?? null;
+        $buyer->business_type = $validated['business_type'];
+        $buyer->interested_in = $validated['interested_in'] ?? null;
+        $buyer->monthly_volume = $validated['monthly_volume'] ?? null;
+        $buyer->preferred_delivery = $validated['preferred_delivery'] ?? null;
+        $buyer->preferred_payment = $validated['preferred_payment'] ?? null;
+        $buyer->bank_country = $validated['bank_country'] ?? null;
+        $buyer->is_registered_business = $request->boolean('is_registered_business');
+        $buyer->accepted_terms = $request->boolean('accepted_terms');
+        $buyer->bank_transfer_validated = $request->boolean('bank_transfer_validated');
+
+        if (! empty($validated['password'])) {
+            $buyer->password = Hash::make($validated['password']);
+        }
+
+        if ($request->hasFile('company_registration_file')) {
+            $this->deleteStoredFiles([$buyer->company_registration_file]);
+            $buyer->company_registration_file = $request->file('company_registration_file')->store('buyer-kyc', 'public');
+        }
+
+        if ($request->hasFile('id_file')) {
+            $this->deleteStoredFiles([$buyer->id_file]);
+            $buyer->id_file = $request->file('id_file')->store('buyer-kyc', 'public');
+        }
+
+        if ($request->hasFile('import_license_file')) {
+            $this->deleteStoredFiles([$buyer->import_license_file]);
+            $buyer->import_license_file = $request->file('import_license_file')->store('buyer-kyc', 'public');
+        }
+
+        $buyer->save();
+
+        return redirect()
+            ->route('admin.buyers')
+            ->with('success', 'Buyer updated successfully.');
+    }
+
+    public function destroyBuyer(User $buyer): RedirectResponse
+    {
+        abort_unless($buyer->type === 'buyer', 404);
+
+        $hasBids = $buyer->bids()->exists();
+        $hasSettlements = Settlement::query()->where('buyer_id', $buyer->id)->exists();
+
+        if ($hasBids || $hasSettlements) {
+            return redirect()
+                ->route('admin.buyers')
+                ->with('error', 'This buyer cannot be deleted because related bids or settlements already exist.');
+        }
+
+        $this->deleteStoredFiles([
+            $buyer->company_registration_file,
+            $buyer->id_file,
+            $buyer->import_license_file,
+            $buyer->profile_image,
+        ]);
+
+        $buyer->delete();
+
+        return redirect()
+            ->route('admin.buyers')
+            ->with('success', 'Buyer deleted successfully.');
+    }
+
+    public function updateBuyerStatus(Request $request, User $buyer): RedirectResponse
+    {
+        abort_unless($buyer->type === 'buyer', 404);
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:active,pending,under review,suspended,blocked,inactive'],
+        ]);
+
+        $buyer->status = $validated['status'];
+        $buyer->save();
+
+        return redirect()
+            ->route('admin.buyers')
+            ->with('success', 'Buyer status updated successfully.');
+    }
+    public function sellers(Request $request): View
+    {
+        $this->syncScheduledAuctionsToActive();
+
+        $dashboardData = $this->buildDashboardData();
+        $statusFilter = Str::lower(trim((string) $request->query('status', '')));
+
+        $sellerBaseQuery = User::query()
+            ->where('type', 'seller');
+
+        if ($statusFilter !== '') {
+            $sellerBaseQuery->whereRaw('LOWER(COALESCE(status, ?)) = ?', ['active', $statusFilter]);
+        }
+
+        $sellers = $sellerBaseQuery
+            ->select('users.*')
+            ->selectSub(
+                Lot::query()
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('lots.seller_id', 'users.id'),
+                'auctions_count'
+            )
+            ->selectSub(
+                Settlement::query()
+                    ->selectRaw('COALESCE(SUM(amount), 0)')
+                    ->whereColumn('settlements.seller_id', 'users.id'),
+                'total_sales'
+            )
+            ->orderByDesc('users.created_at')
+            ->get()
+            ->map(function ($seller) {
+                $profileImage = $seller->profile_image
+                    ? asset('storage/' . ltrim((string) $seller->profile_image, '/'))
+                    : 'https://via.placeholder.com/80x80?text=Seller';
+
+                $normalizedStatus = Str::lower(trim((string) ($seller->status ?: 'active')));
+
+                $seller->display_name = $seller->company_name ?: $seller->name ?: 'Seller';
+                $seller->seller_code = 'SEL' . str_pad((string) $seller->id, 4, '0', STR_PAD_LEFT);
+                $seller->profile_image_url = $profileImage;
+                $seller->normalized_status = $normalizedStatus;
+
+                return $seller;
+            });
+
+        $allSellerStatuses = User::query()
+            ->where('type', 'seller')
+            ->select('status')
+            ->distinct()
+            ->pluck('status')
+            ->filter()
+            ->map(fn ($status) => Str::lower(trim((string) $status)))
+            ->unique()
+            ->sort()
+            ->values();
+
+        $underReviewStatuses = ['under review', 'pending', 'pending review', 'review'];
+
+        $stats = [
+            'totalSellers' => User::query()->where('type', 'seller')->count(),
+            'activeSellers' => User::query()->where('type', 'seller')->whereRaw('LOWER(COALESCE(status, ?)) = ?', ['active', 'active'])->count(),
+            'underReviewSellers' => User::query()
+                ->where('type', 'seller')
+                ->where(function ($query) use ($underReviewStatuses) {
+                    foreach ($underReviewStatuses as $index => $status) {
+                        $method = $index === 0 ? 'whereRaw' : 'orWhereRaw';
+                        $query->{$method}('LOWER(COALESCE(status, ?)) = ?', ['active', $status]);
+                    }
+                })
+                ->count(),
+            'totalSales' => (float) Settlement::query()->sum('amount'),
+        ];
+
+        return view('bid_admin.admin.sellers', array_merge($dashboardData, [
+            'sellers' => $sellers,
+            'sellerStatusOptions' => $allSellerStatuses,
+            'selectedSellerStatus' => $statusFilter,
+            'sellerStats' => $stats,
+        ]));
+    }
+    public function sellerDetails(Request $request): View
+    {
+        $sellerId = (int) $request->query('seller', 0);
+
+        $seller = User::query()
+            ->where('type', 'seller')
+            ->findOrFail($sellerId);
+
+        $lots = Lot::query()
+            ->where('seller_id', $seller->id)
+            ->latest('id')
+            ->get();
+
+        $settlements = Settlement::query()
+            ->where('seller_id', $seller->id)
+            ->with('lot')
+            ->latest('id')
+            ->get();
+
+        $totalRevenue = (float) $settlements->sum('amount');
+        $commissionPaid = (float) $settlements->sum('commission_amount');
+        $pendingSettlement = (float) $settlements
+            ->filter(fn (Settlement $settlement) => in_array(Str::lower((string) $settlement->status), ['pending', 'processing'], true))
+            ->sum('net_amount');
+        $averageLotValue = (float) ($lots->count() > 0 ? ($totalRevenue / max($lots->count(), 1)) : 0);
+        $activeAuctionsCount = $lots->filter(fn (Lot $lot) => $lot->isCurrentlyActive())->count();
+        $soldLotsCount = $lots->where('status', 'sold')->count();
+        $sellThroughRate = $lots->count() > 0 ? round(($soldLotsCount / $lots->count()) * 100) : 0;
+
+        $sellerRevenueRanking = Settlement::query()
+            ->selectRaw('seller_id, COALESCE(SUM(amount), 0) as total_amount')
+            ->groupBy('seller_id')
+            ->orderByDesc('total_amount')
+            ->pluck('seller_id')
+            ->values();
+
+        $rankingPosition = $sellerRevenueRanking->search($seller->id);
+        $sellerRankLabel = $rankingPosition === false ? '-' : 'Top ' . ((int) $rankingPosition + 1);
+
+        $recentSoldLots = $lots
+            ->where('status', 'sold')
+            ->sortByDesc('id')
+            ->take(3)
+            ->values();
+
+        $recentPayouts = $settlements
+            ->take(5)
+            ->map(function (Settlement $settlement) {
+                $provider = Str::of((string) ($settlement->payment_provider ?: 'manual'))
+                    ->replace('_', ' ')
+                    ->title();
+
+                $settlement->provider_label = (string) $provider;
+                $settlement->status_label = Str::title((string) $settlement->status);
+                $settlement->status_badge_class = match (Str::lower((string) $settlement->status)) {
+                    'paid' => 'bg-success',
+                    'processing' => 'bg-warning text-dark',
+                    'failed' => 'bg-danger',
+                    default => 'bg-secondary',
+                };
+
+                return $settlement;
+            });
+
+        $profileImageUrl = $seller->profile_image
+            ? asset('storage/' . ltrim((string) $seller->profile_image, '/'))
+            : 'https://via.placeholder.com/120x120?text=Seller';
+
+        $supplyTypeBadges = is_array($seller->supply_type)
+            ? $seller->supply_type
+            : (json_decode((string) $seller->supply_type, true) ?: []);
+
+        return view('bid_admin.admin.seller-details', [
+            'seller' => $seller,
+            'profileImageUrl' => $profileImageUrl,
+            'sellerCode' => 'SEL' . str_pad((string) $seller->id, 4, '0', STR_PAD_LEFT),
+            'totalRevenue' => $totalRevenue,
+            'commissionPaid' => $commissionPaid,
+            'totalLotsListed' => $lots->count(),
+            'pendingSettlement' => $pendingSettlement,
+            'averageLotValue' => $averageLotValue,
+            'activeAuctionsCount' => $activeAuctionsCount,
+            'sellerRankLabel' => $sellerRankLabel,
+            'sellThroughRate' => $sellThroughRate,
+            'recentSoldLots' => $recentSoldLots,
+            'recentPayouts' => $recentPayouts,
+            'supplyTypeBadges' => $supplyTypeBadges,
+        ]);
+    }
+    public function addSeller(): View
+    {
+        return view('bid_admin.admin.add-seller', $this->buildAdminSellerFormData());
+    }
+
+    public function storeSeller(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:30'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8'],
+            'company_name' => ['required', 'string', 'max:255'],
+            'landing_site_port' => ['required', 'string', 'max:255'],
+            'address' => ['required', 'string', 'max:500'],
+            'country' => ['required', 'string', 'max:100'],
+            'supply_type' => ['nullable', 'array'],
+            'supply_type.*' => ['string', 'max:50'],
+            'processing_status' => ['nullable', 'array'],
+            'processing_status.*' => ['string', 'max:50'],
+            'estimated_weekly_volume' => ['nullable', 'string', 'max:100'],
+            'trade_license_file' => ['required', 'file', 'max:5120'],
+            'facility_photos_file' => ['nullable', 'file', 'max:5120'],
+            'certificates_file' => ['nullable', 'file', 'max:5120'],
+        ]);
+
+        $seller = new User();
+        $seller->name = $validated['name'];
+        $seller->phone = $validated['phone'];
+        $seller->email = $validated['email'];
+        $seller->password = Hash::make($validated['password']);
+        $seller->company_name = $validated['company_name'];
+        $seller->landing_site_port = $validated['landing_site_port'];
+        $seller->address = $validated['address'];
+        $seller->country = $validated['country'];
+        $seller->supply_type = $validated['supply_type'] ?? null;
+        $seller->processing_status = $validated['processing_status'] ?? null;
+        $seller->estimated_weekly_volume = $validated['estimated_weekly_volume'] ?? null;
+        $seller->type = 'seller';
+
+        if (Schema::hasColumn('users', 'status')) {
+            $seller->status = 'pending';
+        }
+
+        if ($request->hasFile('trade_license_file')) {
+            $seller->trade_license_file = $request->file('trade_license_file')->store('seller-kyc', 'public');
+        }
+
+        if ($request->hasFile('facility_photos_file')) {
+            $seller->facility_photos_file = $request->file('facility_photos_file')->store('seller-kyc', 'public');
+        }
+
+        if ($request->hasFile('certificates_file')) {
+            $seller->certificates_file = $request->file('certificates_file')->store('seller-kyc', 'public');
+        }
+
+        $seller->save();
+
+        return redirect()
+            ->route('admin.sellers')
+            ->with('success', 'Seller created successfully and marked as pending review.');
+    }
+
+    public function editSeller(User $seller): View
+    {
+        abort_unless($seller->type === 'seller', 404);
+
+        return view('bid_admin.admin.add-seller', $this->buildAdminSellerFormData($seller, true));
+    }
+
+    public function updateSeller(Request $request, User $seller): RedirectResponse
+    {
+        abort_unless($seller->type === 'seller', 404);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:30'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $seller->id],
+            'password' => ['nullable', 'string', 'min:8'],
+            'company_name' => ['required', 'string', 'max:255'],
+            'landing_site_port' => ['required', 'string', 'max:255'],
+            'address' => ['required', 'string', 'max:500'],
+            'country' => ['required', 'string', 'max:100'],
+            'supply_type' => ['nullable', 'array'],
+            'supply_type.*' => ['string', 'max:50'],
+            'processing_status' => ['nullable', 'array'],
+            'processing_status.*' => ['string', 'max:50'],
+            'estimated_weekly_volume' => ['nullable', 'string', 'max:100'],
+            'trade_license_file' => ['nullable', 'file', 'max:5120'],
+            'facility_photos_file' => ['nullable', 'file', 'max:5120'],
+            'certificates_file' => ['nullable', 'file', 'max:5120'],
+        ]);
+
+        $seller->name = $validated['name'];
+        $seller->phone = $validated['phone'];
+        $seller->email = $validated['email'];
+        $seller->company_name = $validated['company_name'];
+        $seller->landing_site_port = $validated['landing_site_port'];
+        $seller->address = $validated['address'];
+        $seller->country = $validated['country'];
+        $seller->supply_type = $validated['supply_type'] ?? null;
+        $seller->processing_status = $validated['processing_status'] ?? null;
+        $seller->estimated_weekly_volume = $validated['estimated_weekly_volume'] ?? null;
+
+        if (! empty($validated['password'])) {
+            $seller->password = Hash::make($validated['password']);
+        }
+
+        if ($request->hasFile('trade_license_file')) {
+            $this->deleteStoredFiles([$seller->trade_license_file]);
+            $seller->trade_license_file = $request->file('trade_license_file')->store('seller-kyc', 'public');
+        }
+
+        if ($request->hasFile('facility_photos_file')) {
+            $this->deleteStoredFiles([$seller->facility_photos_file]);
+            $seller->facility_photos_file = $request->file('facility_photos_file')->store('seller-kyc', 'public');
+        }
+
+        if ($request->hasFile('certificates_file')) {
+            $this->deleteStoredFiles([$seller->certificates_file]);
+            $seller->certificates_file = $request->file('certificates_file')->store('seller-kyc', 'public');
+        }
+
+        $seller->save();
+
+        return redirect()
+            ->route('admin.sellers')
+            ->with('success', 'Seller updated successfully.');
+    }
+
+    public function destroySeller(User $seller): RedirectResponse
+    {
+        abort_unless($seller->type === 'seller', 404);
+
+        $hasLots = Lot::query()->where('seller_id', $seller->id)->exists();
+        $hasSettlements = Settlement::query()->where('seller_id', $seller->id)->exists();
+
+        if ($hasLots || $hasSettlements) {
+            return redirect()
+                ->route('admin.sellers')
+                ->with('error', 'This seller cannot be deleted because related lots or settlements already exist.');
+        }
+
+        $this->deleteStoredFiles([
+            $seller->trade_license_file,
+            $seller->facility_photos_file,
+            $seller->certificates_file,
+            $seller->profile_image,
+        ]);
+
+        $seller->delete();
+
+        return redirect()
+            ->route('admin.sellers')
+            ->with('success', 'Seller deleted successfully.');
+    }
+
+    public function updateSellerStatus(Request $request, User $seller): RedirectResponse
+    {
+        abort_unless($seller->type === 'seller', 404);
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:active,pending,under review,suspended,blocked,inactive'],
+        ]);
+
+        $seller->status = $validated['status'];
+        $seller->save();
+
+        return redirect()
+            ->route('admin.sellers')
+            ->with('success', 'Seller status updated successfully.');
+    }
     public function financeOverview(): View { return view('bid_admin.admin.finance-overview'); }
     public function notifications(): View { return $this->renderOrDashboard('bid_admin.admin.notifications'); }
-    public function accountSettings(): View { return $this->renderOrDashboard('bid_admin.admin.account-settings'); }
+    public function accountSettings(): View|RedirectResponse
+    {
+        $admin = $this->getAuthenticatedAdmin();
+
+        if (! $admin) {
+            return redirect()->route('admin.login')->with('error', 'Please log in as admin to access your profile.');
+        }
+
+        return view('bid_admin.admin.account-settings', [
+            'admin' => $admin,
+        ]);
+    }
+
+    public function updateAccountSettings(Request $request): RedirectResponse
+    {
+        $admin = $this->getAuthenticatedAdmin();
+
+        if (! $admin) {
+            return redirect()->route('admin.login')->with('error', 'Please log in as admin to update your profile.');
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:admins,email,' . $admin->id],
+        ]);
+
+        $admin->fill([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+        ]);
+
+        $admin->save();
+
+        $request->session()->put('admin_user', [
+            'id' => $admin->id,
+            'name' => $admin->name,
+            'email' => $admin->email,
+            'role' => $admin->role,
+        ]);
+
+        return redirect()
+            ->route('admin.account-settings')
+            ->with('success', 'Profile updated successfully.');
+    }
+
+    public function changePassword(): View|RedirectResponse
+    {
+        $admin = $this->getAuthenticatedAdmin();
+
+        if (! $admin) {
+            return redirect()->route('admin.login')->with('error', 'Please log in as admin to access password settings.');
+        }
+
+        return view('bid_admin.admin.change-password', [
+            'admin' => $admin,
+        ]);
+    }
+
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $admin = $this->getAuthenticatedAdmin();
+
+        if (! $admin) {
+            return redirect()->route('admin.login')->with('error', 'Please log in as admin to update your password.');
+        }
+
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        if (! Hash::check($validated['current_password'], (string) $admin->password)) {
+            return back()->withErrors([
+                'current_password' => 'Current password is incorrect.',
+            ]);
+        }
+
+        $admin->password = Hash::make($validated['new_password']);
+        $admin->save();
+
+        return redirect()
+            ->route('admin.change-password')
+            ->with('success', 'Password updated successfully.');
+    }
     public function login(): View { return view('bid_admin.admin.index'); }
 
     public function notificationData(Request $request): JsonResponse
@@ -779,6 +1555,33 @@ class AdminController extends Controller
         return view()->exists($view) ? view($view) : $this->dashboard();
     }
 
+    private function buildAdminSellerFormData(?User $seller = null, bool $isEditMode = false): array
+    {
+        $dashboardData = $this->buildDashboardData();
+
+        return array_merge($dashboardData, [
+            'sellerCountries' => ['France', 'Spain', 'India', 'Morocco'],
+            'sellerSupplyTypes' => ['Fresh', 'Frozen', 'Both'],
+            'sellerProcessingStatuses' => ['Whole', 'Fillet', 'Packed', 'IQF', 'Other'],
+            'seller' => $seller,
+            'isEditMode' => $isEditMode,
+        ]);
+    }
+
+    private function buildAdminBuyerFormData(?User $buyer = null, bool $isEditMode = false): array
+    {
+        return array_merge($this->buildDashboardData(), [
+            'buyerCountries' => ['France', 'Spain', 'Italy', 'India'],
+            'buyerBusinessTypes' => ['Hotels', 'Restaurants', 'Supermarkets', 'Catering', 'Bulk Importer', 'Distributor', 'Reseller', 'Processing Company'],
+            'buyerInterestedInOptions' => ['Fresh', 'Frozen', 'Both'],
+            'buyerMonthlyVolumeOptions' => ['100 - 500 kg', '500 - 1000 kg', '1000 - 5000 kg', '5000+ kg'],
+            'buyerPreferredDeliveryOptions' => ['Air', 'Sea', 'Local Pickup'],
+            'buyerPreferredPaymentOptions' => ['Bank Transfer', 'Online Payment', 'LC'],
+            'buyer' => $buyer,
+            'isEditMode' => $isEditMode,
+        ]);
+    }
+
     private function resolveAdminId(): ?int
     {
         $adminId = session('admin_user.id');
@@ -793,6 +1596,21 @@ class AdminController extends Controller
             ->value('id');
 
         return $fallback ? (int) $fallback : null;
+    }
+
+    private function getAuthenticatedAdmin(): ?Admin
+    {
+        $adminId = session('admin_user.id');
+        $adminRole = session('admin_user.role');
+
+        if (! $adminId || $adminRole !== 'admin') {
+            return null;
+        }
+
+        return Admin::query()
+            ->where('id', $adminId)
+            ->where('role', 'admin')
+            ->first();
     }
 
     private function createAuctionSettlement(Lot $lot, Bid $winnerBid, float $finalPrice): void

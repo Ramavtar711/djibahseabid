@@ -8,20 +8,20 @@
             <div class="status-header d-flex flex-wrap justify-content-between align-items-center">
                <div class="d-flex align-items-center gap-4">
                   <div class="small">
-                     <i class="bi bi-circle-fill text-success me-1"></i> SYSTEM STATUS: <strong>LIVE</strong>
+                     <i class="bi bi-circle-fill {{ $systemStatus === 'LIVE' ? 'text-success' : 'text-secondary' }} me-1"></i> SYSTEM STATUS: <strong>{{ $systemStatus }}</strong>
                   </div>
                   <div class="small">
-                     <i class="bi bi-circle-fill text-danger me-1"></i> <strong>6</strong> Live Auctions
+                     <i class="bi bi-circle-fill text-danger me-1"></i> <strong>{{ $liveAuctionsCount }}</strong> Live Auctions
                   </div>
                   <div class="small">
-                     <i class="bi bi-circle-fill text-warning me-1"></i> <strong>3</strong> Upcoming
+                     <i class="bi bi-circle-fill text-warning me-1"></i> <strong>{{ $upcomingAuctionsCount }}</strong> Upcoming
                   </div>
                   <div class="small">
-                     <i class="bi bi-circle-fill text-success me-1"></i> <strong>$12,450</strong> Revenue Today
+                     <i class="bi bi-circle-fill text-success me-1"></i> <strong>${{ number_format((float) $revenueToday, 2) }}</strong> Revenue Today
                   </div>
                </div>
                <div class="fw-bold">
-                  48 <span class="text-muted fw-normal">Buyers Online</span>
+                  {{ $registeredBuyersCount }} <span class="text-muted fw-normal">Buyers Registered</span>
                </div>
             </div>
             
@@ -40,13 +40,21 @@
       </div>
     </div>
   </div>
+
+  @if (session('success'))
+      <div class="alert alert-success">{{ session('success') }}</div>
+  @endif
+
+  @if (session('error'))
+      <div class="alert alert-danger">{{ session('error') }}</div>
+  @endif
   
     <div class="row mb-4">
             <div class="col-md-3">
                 <div class="stat-card d-flex justify-content-between align-items-center">
                     <div>
                         <h6>Total Sellers</h6>
-                        <h4>128</h4>
+                        <h4>{{ $sellerStats['totalSellers'] }}</h4>
                     </div>
                     <div class="stat-icon">
                         <i class="bi bi-people"></i>
@@ -57,7 +65,7 @@
                 <div class="stat-card d-flex justify-content-between align-items-center">
                     <div>
                         <h6>Active Sellers</h6>
-                        <h4>102</h4>
+                        <h4>{{ $sellerStats['activeSellers'] }}</h4>
                     </div>
                     <div class="stat-icon">
                         <i class="bi bi-check-circle"></i>
@@ -68,7 +76,7 @@
                 <div class="stat-card d-flex justify-content-between align-items-center">
                     <div>
                         <h6>Under Review</h6>
-                        <h4>16</h4>
+                        <h4>{{ $sellerStats['underReviewSellers'] }}</h4>
                     </div>
                     <div class="stat-icon">
                         <i class="bi bi-hourglass-split"></i>
@@ -79,7 +87,7 @@
                 <div class="stat-card d-flex justify-content-between align-items-center">
                     <div>
                         <h6>Total Sales</h6>
-                        <h4>$ 3.8 Cr</h4>
+                        <h4>${{ number_format((float) $sellerStats['totalSales'], 2) }}</h4>
                     </div>
                     <div class="stat-icon">
                         <i class="bi bi-currency-dollar"></i>
@@ -90,19 +98,15 @@
    <!-- ================= TABLE VIEW ================= -->
         <div class="table-glass" id="tableView">
              <div class="d-flex justify-content-between mb-3">
-               <select class="form-select w-25">
-                    <option>
+               <select class="form-select w-25" onchange="window.location=this.value">
+                    <option value="{{ route('admin.sellers') }}" {{ $selectedSellerStatus === '' ? 'selected' : '' }}>
                         Filter by Status
                     </option>
-                    <option>
-                        Active
-                    </option>
-                    <option>
-                        Under Review
-                    </option>
-                    <option>
-                        Suspended
-                    </option>
+                    @foreach($sellerStatusOptions as $statusOption)
+                        <option value="{{ route('admin.sellers', ['status' => $statusOption]) }}" {{ $selectedSellerStatus === $statusOption ? 'selected' : '' }}>
+                            {{ \Illuminate\Support\Str::title($statusOption) }}
+                        </option>
+                    @endforeach
                 </select>
             </div>
             <div class="table-responsive">
@@ -119,122 +123,59 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <img class="seller-avatar" src="https://i.pravatar.cc/100?img=10">
-                                    <div>
-                                        <strong>Ocean Fresh Exports</strong><br>
-                                        <small class="text-muted">SEL1021</small>
+                        @forelse($sellers as $seller)
+                            @php
+                                $statusClass = match($seller->normalized_status) {
+                                    'active' => 'status-active',
+                                    'under review', 'pending', 'pending review', 'review' => 'status-review',
+                                    'suspended', 'inactive', 'blocked' => 'bg-danger',
+                                    default => 'bg-secondary',
+                                };
+                            @endphp
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img class="seller-avatar" src="{{ $seller->profile_image_url }}" alt="{{ $seller->display_name }}">
+                                        <div>
+                                            <strong>{{ $seller->display_name }}</strong><br>
+                                            <small class="text-muted">{{ $seller->seller_code }}</small>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                            <td>seller@gmail.com</td>
-                            <td>Mumbai Dockyard</td>
-                            <td>32</td>
-                            <td class="fw-semibold text-primary">$ 48,00,000</td>
-                            <td><span class="badge status-active">Active</span></td>
-                            <td>
-                                <div class="action-buttons">
-                                             <a href="{{ route('admin.seller-details') }}" class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></a>
-                                             <button class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></button>
-                                             <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash3"></i></button>
-                                          </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <img class="seller-avatar" src="https://i.pravatar.cc/100?img=12">
-                                    <div>
-                                        <strong>BlueWave Fisheries</strong><br>
-                                        <small class="text-muted">SEL1022</small>
+                                </td>
+                                <td>{{ $seller->email ?: '-' }}</td>
+                                <td>{{ $seller->landing_site_port ?: '-' }}</td>
+                                <td>{{ (int) $seller->auctions_count }}</td>
+                                <td class="fw-semibold text-primary">${{ number_format((float) $seller->total_sales, 2) }}</td>
+                                <td>
+                                    <form method="POST" action="{{ route('admin.sellers.status', $seller->id) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                            @foreach(['pending', 'active', 'under review', 'inactive', 'suspended', 'blocked'] as $statusOption)
+                                                <option value="{{ $statusOption }}" @selected($seller->normalized_status === $statusOption)>
+                                                    {{ \Illuminate\Support\Str::title($statusOption) }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </form>
+                                </td>
+                                <td>
+                                    <div class="action-buttons d-flex gap-2">
+                                        <a href="{{ route('admin.seller-details', ['seller' => $seller->id]) }}" class="btn btn-sm btn-primary" title="View"><i class="bi bi-eye"></i></a>
+                                        <a href="{{ route('admin.edit-seller', $seller->id) }}" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></a>
+                                        <form method="POST" action="{{ route('admin.delete-seller', $seller->id) }}" onsubmit="return confirm('Are you sure you want to delete this seller?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-danger" type="submit" title="Delete"><i class="bi bi-trash3"></i></button>
+                                        </form>
                                     </div>
-                                </div>
-                            </td>
-                            <td>bluewave@gmail.com</td>
-                            <td>Kochi Harbor</td>
-                            <td>25</td>
-                            <td class="fw-semibold text-primary">$ 36,75,000</td>
-                            <td><span class="badge status-review">Under Review</span></td>
-                            <td>
-                              <div class="action-buttons">
-                                             <a href="{{ route('admin.seller-details') }}" class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></a>
-                                             <button class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></button>
-                                             <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash3"></i></button>
-                                          </div>
-                            </td>
-                        </tr>
-
-                        <tr>
-         <td>
-            <div class="d-flex align-items-center gap-2">
-               <img class="seller-avatar" src="https://i.pravatar.cc/100?img=14">
-               <div>
-                  <strong>SeaKing Traders</strong><br>
-                  <small class="text-muted">SEL1023</small>
-               </div>
-            </div>
-         </td>
-         <td>seaking@gmail.com</td>
-         <td>Chennai Port</td>
-         <td>18</td>
-         <td class="fw-semibold text-primary">$ 21,40,000</td>
-         <td><span class="badge status-active">Active</span></td>
-         <td>
-            <div class="action-buttons">
-                                             <a href="{{ route('admin.seller-details') }}" class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></a>
-                                             <button class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></button>
-                                             <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash3"></i></button>
-                                          </div>
-         </td>
-      </tr>
-      <tr>
-         <td>
-            <div class="d-flex align-items-center gap-2">
-               <img class="seller-avatar" src="https://i.pravatar.cc/100?img=16">
-               <div>
-                  <strong>HarborCatch Pvt Ltd</strong><br>
-                  <small class="text-muted">SEL1024</small>
-               </div>
-            </div>
-         </td>
-         <td>harbor@gmail.com</td>
-         <td>Visakhapatnam</td>
-         <td>40</td>
-         <td class="fw-semibold text-primary">$ 62,30,000</td>
-         <td><span class="badge status-active">Active</span></td>
-         <td>
-            <div class="action-buttons">
-                                             <a href="{{ route('admin.seller-details') }}" class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></a>
-                                             <button class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></button>
-                                             <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash3"></i></button>
-                                          </div>
-         </td>
-      </tr>
-      <tr>
-         <td>
-            <div class="d-flex align-items-center gap-2">
-               <img class="seller-avatar" src="https://i.pravatar.cc/100?img=18">
-               <div>
-                  <strong>DeepSea Exim</strong><br>
-                  <small class="text-muted">SEL1025</small>
-               </div>
-            </div>
-         </td>
-         <td>deepsea@gmail.com</td>
-         <td>Goa Port</td>
-         <td>14</td>
-         <td class="fw-semibold text-primary">$ 18,75,000</td>
-         <td><span class="badge bg-danger">Suspended</span></td>
-         <td>
-            <div class="action-buttons">
-                                             <a href="{{ route('admin.seller-details') }}" class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></a>
-                                             <button class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></button>
-                                             <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash3"></i></button>
-                                          </div>
-         </td>
-      </tr>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="text-center py-4">No sellers found for the selected filter.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
