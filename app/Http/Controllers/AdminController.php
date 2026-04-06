@@ -8,6 +8,8 @@ use App\Models\Bid;
 use App\Models\Lot;
 use App\Models\Settlement;
 use App\Models\User;
+use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -1102,7 +1104,14 @@ class AdminController extends Controller
             ->route('admin.sellers')
             ->with('success', 'Seller status updated successfully.');
     }
-    public function financeOverview(): View { return view('bid_admin.admin.finance-overview'); }
+    public function financeOverview(): View
+    {
+        return view('bid_admin.admin.finance-overview', $this->buildFinanceOverviewData());
+    }
+    public function financeOverviewData(): JsonResponse
+    {
+        return response()->json($this->buildFinanceOverviewData());
+    }
     public function notifications(): View { return $this->renderOrDashboard('bid_admin.admin.notifications'); }
     public function accountSettings(): View|RedirectResponse
     {
@@ -2004,6 +2013,200 @@ class AdminController extends Controller
             'lot' => $lot,
             'isEditMode' => $isEditMode,
         ];
+    }
+
+    private function buildFinanceOverviewData(): array
+    {
+        $dashboardData = $this->buildDashboardData();
+        $now = now();
+        $todayStart = $now->copy()->startOfDay();
+        $tomorrowStart = $todayStart->copy()->addDay();
+        $months = collect(range(5, 1))
+            ->map(fn (int $offset) => $now->copy()->subMonths($offset)->startOfMonth())
+            ->push($now->copy()->startOfMonth())
+            ->values();
+
+        $totalRevenue = (float) Settlement::query()->sum('amount');
+        $totalCommission = (float) Settlement::query()->sum('commission_amount');
+        $platformBalance = (float) Wallet::query()->sum('available_balance');
+        $escrowHolding = (float) Wallet::query()->sum('blocked_balance');
+        $pendingPayments = (float) Settlement::query()
+            ->whereIn('status', ['pending', 'processing'])
+            ->sum('amount');
+        $failedSettlementCount = (int) Settlement::query()->where('status', 'failed')->count();
+        $failedWalletTransactionCount = (int) WalletTransaction::query()->where('status', 'failed')->count();
+        $failedTransactions = $failedSettlementCount + $failedWalletTransactionCount;
+        $generatedInvoices = (int) Settlement::query()->count();
+        $pendingSettlementCount = (int) Settlement::query()->where('status', 'pending')->count();
+        $processingSettlementCount = (int) Settlement::query()->where('status', 'processing')->count();
+        $expiredSettlementCount = (int) Settlement::query()->where('status', 'expired')->count();
+
+        $avgValidationMinutes = (float) Settlement::query()
+            ->where('status', 'paid')
+            ->whereNotNull('paid_at')
+            ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, created_at, paid_at)) as avg_minutes')
+            ->value('avg_minutes');
+
+        $monthlyRevenue = [];
+        $monthlyCommission = [];
+        $monthlyPayout = [];
+        $monthlyLabels = [];
+
+        foreach ($months as $monthStart) {
+            $monthEnd = $monthStart->copy()->endOfMonth();
+            $monthlyLabels[] = $monthStart->format('M');
+            $monthlyRevenue[] = round((float) Settlement::query()
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->sum('amount'), 2);
+            $monthlyCommission[] = round((float) Settlement::query()
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->sum('commission_amount'), 2);
+            $monthlyPayout[] = round((float) Settlement::query()
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->sum('net_amount'), 2);
+        }
+
+        $paymentMethodRows = Settlement::query()
+            ->selectRaw('COALESCE(NULLIF(payment_provider, ""), "manual") as provider, COUNT(*) as total')
+            ->groupBy('provider')
+            ->orderByDesc('total')
+            ->get();
+
+        $paymentMethodLabels = $paymentMethodRows
+            ->map(fn ($row) => Str::of((string) $row->provider)->replace('_', ' ')->title()->toString())
+            ->values()
+            ->all();
+        $paymentMethodData = $paymentMethodRows
+            ->map(fn ($row) => (int) $row->total)
+            ->values()
+            ->all();
+
+        $bankTransferStatuses = ['paid', 'processing', 'pending', 'failed', 'expired'];
+        $bankTransferRows = Settlement::query()
+            ->where('payment_provider', 'bank_transfer')
+            ->selectRaw('status, COALESCE(SUM(amount), 0) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $bankTransferLabels = collect($bankTransferStatuses)
+            ->filter(fn (string $status) => isset($bankTransferRows[$status]) || in_array($status, ['paid', 'pending', 'failed'], true))
+            ->map(fn (string $status) => Str::of($status)->replace('_', ' ')->title()->toString())
+            ->values()
+            ->all();
+        $bankTransferData = collect($bankTransferStatuses)
+            ->filter(fn (string $status) => isset($bankTransferRows[$status]) || in_array($status, ['paid', 'pending', 'failed'], true))
+            ->map(fn (string $status) => round((float) ($bankTransferRows[$status] ?? 0), 2))
+            ->values()
+            ->all();
+
+        $duplicateProofCount = (int) Settlement::query()
+            ->whereNotNull('payment_reference')
+            ->where('payment_reference', '!=', '')
+            ->selectRaw('payment_reference')
+            ->groupBy('payment_reference')
+            ->havingRaw('COUNT(*) > 1')
+            ->get()
+            ->count();
+
+        $riskFlags = [
+            [
+                'label' => 'Pending Settlements',
+                'value' => $pendingSettlementCount,
+                'helper' => 'Awaiting buyer payment',
+                'class' => 'text-warning',
+            ],
+            [
+                'label' => 'Payment Verification',
+                'value' => $processingSettlementCount,
+                'helper' => 'Submitted and under review',
+                'class' => 'text-info',
+            ],
+            [
+                'label' => 'Duplicate References',
+                'value' => $duplicateProofCount,
+                'helper' => 'Repeated payment proofs',
+                'class' => 'text-danger',
+            ],
+            [
+                'label' => 'Expired Windows',
+                'value' => $expiredSettlementCount,
+                'helper' => 'Payment window missed',
+                'class' => 'text-danger',
+            ],
+        ];
+
+        $recentTransactions = Settlement::query()
+            ->with(['buyer:id,name', 'seller:id,name'])
+            ->orderByDesc('amount')
+            ->orderByDesc('created_at')
+            ->take(5)
+            ->get()
+            ->map(function (Settlement $settlement) {
+                $providerLabel = Str::of((string) ($settlement->payment_provider ?: 'manual'))
+                    ->replace('_', ' ')
+                    ->title()
+                    ->toString();
+
+                $status = Str::lower((string) $settlement->status);
+                $statusLabel = match ($status) {
+                    'paid' => 'Validated',
+                    'processing' => 'Processing',
+                    'pending' => 'Pending',
+                    'failed' => 'Failed',
+                    'expired' => 'Expired',
+                    default => Str::of($status)->replace('_', ' ')->title()->toString(),
+                };
+
+                $statusBadgeClass = match ($status) {
+                    'paid' => 'bg-success',
+                    'processing', 'pending' => 'bg-warning text-dark',
+                    'failed', 'expired' => 'bg-danger',
+                    default => 'bg-secondary',
+                };
+
+                return [
+                    'auction_code' => 'AUC' . str_pad((string) $settlement->lot_id, 4, '0', STR_PAD_LEFT),
+                    'buyer_name' => $settlement->buyer?->name ?: 'N/A',
+                    'seller_name' => $settlement->seller?->name ?: 'N/A',
+                    'amount' => (float) $settlement->amount,
+                    'payment_type' => $providerLabel,
+                    'status_label' => $statusLabel,
+                    'status_badge_class' => $statusBadgeClass,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $buyersOnlineCount = (int) User::query()
+            ->where('type', 'buyer')
+            ->whereRaw('LOWER(COALESCE(status, "")) = ?', ['active'])
+            ->count();
+
+        $kpis = [
+            ['title' => 'Total Revenue', 'value' => $totalRevenue, 'suffix' => null],
+            ['title' => 'Total Commission', 'value' => $totalCommission, 'suffix' => null],
+            ['title' => 'Platform Balance', 'value' => $platformBalance, 'suffix' => null],
+            ['title' => 'Escrow Holding', 'value' => $escrowHolding, 'suffix' => null],
+            ['title' => 'Pending Payments', 'value' => $pendingPayments, 'suffix' => null],
+            ['title' => 'Failed Transactions', 'value' => $failedTransactions, 'suffix' => 'count'],
+            ['title' => 'Generated Invoices', 'value' => $generatedInvoices, 'suffix' => 'count'],
+            ['title' => 'Avg Validation Time', 'value' => $avgValidationMinutes, 'suffix' => 'hours'],
+        ];
+
+        return array_merge($dashboardData, [
+            'buyersOnlineCount' => $buyersOnlineCount,
+            'financeKpis' => $kpis,
+            'riskFlags' => $riskFlags,
+            'recentTransactions' => $recentTransactions,
+            'monthlyRevenueLabels' => $monthlyLabels,
+            'monthlyRevenueData' => $monthlyRevenue,
+            'monthlyCommissionData' => $monthlyCommission,
+            'monthlyPayoutData' => $monthlyPayout,
+            'paymentMethodLabels' => $paymentMethodLabels,
+            'paymentMethodData' => $paymentMethodData,
+            'bankTransferLabels' => $bankTransferLabels,
+            'bankTransferData' => $bankTransferData,
+        ]);
     }
 
     private function extractStoredPaths(?string $value): array

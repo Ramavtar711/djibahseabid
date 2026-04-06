@@ -62,6 +62,7 @@ Route::prefix('admin')->group(function () {
     Route::delete('/delete-seller/{seller}', [AdminController::class, 'destroySeller'])->name('admin.delete-seller');
     Route::patch('/sellers/{seller}/status', [AdminController::class, 'updateSellerStatus'])->name('admin.sellers.status');
     Route::get('/finance-overview', [AdminController::class, 'financeOverview'])->name('admin.finance-overview');
+    Route::get('/finance-overview/data', [AdminController::class, 'financeOverviewData'])->name('admin.finance-overview.data');
     Route::get('/notifications', [AdminController::class, 'notifications'])->name('admin.notifications');
     Route::get('/notifications/data', [AdminController::class, 'notificationData'])->name('admin.notifications.data');
     Route::post('/notifications/mark-read', [AdminController::class, 'markNotificationRead'])->name('admin.notifications.mark-read');
