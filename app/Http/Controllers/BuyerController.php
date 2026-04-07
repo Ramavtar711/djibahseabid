@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\AdminDashboardUpdated;
 use App\Models\Bid;
 use App\Models\Lot;
 use App\Models\AppNotification;
@@ -392,6 +393,7 @@ class BuyerController extends Controller
 
         $this->notifySellerBidPlaced($lot, $buyerId, (float) $validated['amount']);
         event(new BidPlaced($bid, $buyerName ?? 'Buyer'));
+        event(new AdminDashboardUpdated('bid-placed', $lot->id));
 
         return back()->with('success', 'Your bid has been placed.');
     }

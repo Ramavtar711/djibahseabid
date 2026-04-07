@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\AdminDashboardUpdated;
 use App\Models\Admin;
 use App\Models\AppNotification;
 use App\Models\AuctionMessage;
@@ -291,6 +292,7 @@ class SellerController extends Controller
         $this->notifyQcNewLot($lot);
         $this->notifySellerLotSubmitted($lot);
         $this->notifyBuyersNewLot($lot);
+        event(new AdminDashboardUpdated('seller-lot-created', $lot->id));
 
         return redirect()
             ->route('seller.lot-list')
@@ -367,6 +369,7 @@ class SellerController extends Controller
         }
 
         $lot->update($lotData);
+        event(new AdminDashboardUpdated('seller-lot-updated', $lot->id));
 
         if ($isResubmittingForQc) {
             $this->notifyQcNewLot($lot->fresh());
@@ -406,6 +409,7 @@ class SellerController extends Controller
         }
 
         $lot->delete();
+        event(new AdminDashboardUpdated('seller-lot-deleted'));
 
         return redirect()
             ->route('seller.lot-list')

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\AdminDashboardUpdated;
 use App\Models\Admin;
 use App\Models\AppNotification;
 use App\Models\Bid;
@@ -34,7 +35,11 @@ class AdminController extends Controller
 
     public function dashboardData(): JsonResponse
     {
-        return response()->json($this->buildDashboardData());
+        return response()
+            ->json($this->buildDashboardData())
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     public function liveAuction(): View
@@ -62,6 +67,7 @@ class AdminController extends Controller
         $lot->update([
             'auction_end_at' => $baseEndAt->addMinutes(5),
         ]);
+        event(new AdminDashboardUpdated('auction-extended', $lot->id));
 
         return response()->json([
             'message' => 'Auction extended by 5 minutes.',
@@ -90,6 +96,7 @@ class AdminController extends Controller
             'auction_start_at' => $resumeAt,
             'auction_end_at' => $resumeAt->copy()->addSeconds($remainingSeconds),
         ]);
+        event(new AdminDashboardUpdated('auction-paused', $lot->id));
 
         return response()->json([
             'message' => 'Auction paused for 5 minutes.',
@@ -127,6 +134,7 @@ class AdminController extends Controller
 
             $this->createAuctionSettlement($lot, $winnerBid, $finalPrice);
             $this->notifyAuctionStoppedSold($lot, $winnerBid);
+            event(new AdminDashboardUpdated('auction-stopped-sold', $lot->id));
 
             return response()->json([
                 'message' => 'Auction stopped and awarded to the highest bidder.',
@@ -142,6 +150,7 @@ class AdminController extends Controller
         ]);
 
         $this->notifyAuctionStoppedUnsold($lot);
+        event(new AdminDashboardUpdated('auction-stopped-unsold', $lot->id));
 
         return response()->json([
             'message' => 'Auction stopped with no bids. Lot marked as unsold.',
@@ -301,6 +310,7 @@ class AdminController extends Controller
         $this->notifyQcAndAdminsNewLot($lot);
         $this->notifySellerLotCreatedByAdmin($lot);
         $this->notifyBuyersNewLot($lot);
+        event(new AdminDashboardUpdated('lot-created', $lot->id));
 
         return redirect()
             ->route('admin.lot-management')
@@ -351,6 +361,7 @@ class AdminController extends Controller
         }
 
         $lot->update($lotData);
+        event(new AdminDashboardUpdated('lot-updated', $lot->id));
 
         return redirect()
             ->route('admin.lot-management')
@@ -372,6 +383,7 @@ class AdminController extends Controller
         ]);
 
         $lot->delete();
+        event(new AdminDashboardUpdated('lot-deleted'));
 
         return redirect()
             ->route('admin.lot-management')
@@ -1333,7 +1345,14 @@ class AdminController extends Controller
         return redirect()->route($admin->role === 'qc' ? 'qc.dashboard' : 'admin.dashboard');
     }
 
-    public function transactions(): View { return view('bid_admin.admin.transactions'); }
+    public function transactions(Request $request): View
+    {
+        return view('bid_admin.admin.transactions', $this->buildTransactionsData($request));
+    }
+    public function transactionsData(Request $request): JsonResponse
+    {
+        return response()->json($this->buildTransactionsData($request));
+    }
     public function bankTransfer(): View { return view('bid_admin.admin.bank-transfer'); }
     public function riskMonitoring(): View { return view('bid_admin.admin.risk-monitoring'); }
     public function alets(): View { return view('bid_admin.admin.alets'); }
@@ -1457,6 +1476,7 @@ class AdminController extends Controller
                     'quantity' => round((float) $lot->quantity, 2),
                     'time_left_label' => $lot->time_left_label,
                     'time_left_class' => $lot->time_left_class,
+                    'auction_end_at' => optional($lot->auction_end_at)->toIso8601String(),
                 ];
             })->values()->all(),
             'upcomingLots' => $upcomingLots->map(function (Lot $lot) {
@@ -1546,6 +1566,7 @@ class AdminController extends Controller
                 'bid_count' => (int) ($bidCounts[$lot->id] ?? 0),
                 'time_left_label' => $this->formatCountdown($lot->auction_end_at, $now),
                 'time_left_class' => $this->auctionUrgencyClass($lot->auction_end_at, $now),
+                'auction_end_at' => optional($lot->auction_end_at)->toIso8601String(),
                 'status' => $lot->status,
                 'detail_url' => route('admin.lot-details', ['lot' => $lot->id]),
                 'extend_url' => route('admin.live-auction.extend', ['lot' => $lot->id]),
@@ -2207,6 +2228,220 @@ class AdminController extends Controller
             'bankTransferLabels' => $bankTransferLabels,
             'bankTransferData' => $bankTransferData,
         ]);
+    }
+
+    private function buildTransactionsData(Request $request): array
+    {
+        $dashboardData = $this->buildDashboardData();
+        $allowedPerPage = [15, 25, 50];
+        $perPage = (int) $request->query('per_page', 15);
+        if (! in_array($perPage, $allowedPerPage, true)) {
+            $perPage = 15;
+        }
+
+        $filters = [
+            'search' => trim((string) $request->query('search', '')),
+            'status' => trim((string) $request->query('status', '')),
+            'payment_type' => trim((string) $request->query('payment_type', '')),
+            'date' => trim((string) $request->query('date', '')),
+            'per_page' => (string) $perPage,
+        ];
+
+        $statusAliases = [
+            'successful' => ['paid'],
+            'pending' => ['pending', 'processing'],
+            'failed' => ['failed', 'expired'],
+        ];
+
+        $duplicateReferences = Settlement::query()
+            ->whereNotNull('payment_reference')
+            ->where('payment_reference', '!=', '')
+            ->selectRaw('payment_reference, COUNT(*) as total')
+            ->groupBy('payment_reference')
+            ->havingRaw('COUNT(*) > 1')
+            ->pluck('total', 'payment_reference');
+
+        $query = Settlement::query()
+            ->with([
+                'buyer:id,name,company_legal_name,company_name',
+                'seller:id,name,company_name',
+            ])
+            ->latest('created_at');
+
+        if ($filters['search'] !== '') {
+            $search = $filters['search'];
+            $query->where(function ($builder) use ($search) {
+                $numericSearch = preg_replace('/\D+/', '', $search);
+
+                if ($numericSearch !== '') {
+                    $builder->orWhere('lot_id', 'like', '%' . $numericSearch . '%');
+                }
+
+                $builder->orWhere('payment_reference', 'like', '%' . $search . '%')
+                    ->orWhereHas('buyer', function ($buyerQuery) use ($search) {
+                        $buyerQuery->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('company_legal_name', 'like', '%' . $search . '%')
+                            ->orWhere('company_name', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        if ($filters['status'] !== '' && isset($statusAliases[$filters['status']])) {
+            $query->whereIn('status', $statusAliases[$filters['status']]);
+        }
+
+        if ($filters['payment_type'] !== '') {
+            $query->whereRaw('LOWER(COALESCE(payment_provider, "")) = ?', [Str::lower($filters['payment_type'])]);
+        }
+
+        if ($filters['date'] !== '') {
+            $query->whereDate('created_at', $filters['date']);
+        }
+
+        $summaryQuery = clone $query;
+        $paidCount = (clone $summaryQuery)->where('status', 'paid')->count();
+        $pendingCount = (clone $summaryQuery)->whereIn('status', ['pending', 'processing'])->count();
+        $failedCount = (clone $summaryQuery)->whereIn('status', ['failed', 'expired'])->count();
+
+        $paginatedSettlements = $query
+            ->paginate($perPage)
+            ->appends(array_filter($filters, fn ($value) => $value !== ''));
+
+        $settlements = $paginatedSettlements->getCollection();
+
+        $transactions = $settlements->map(function (Settlement $settlement) use ($duplicateReferences) {
+            $buyer = $settlement->buyer;
+            $provider = Str::lower((string) ($settlement->payment_provider ?: 'manual'));
+            $providerLabel = Str::of($provider)->replace('_', ' ')->title()->toString();
+
+            $status = Str::lower((string) $settlement->status);
+            $statusLabel = match ($status) {
+                'paid' => 'Successful',
+                'processing' => 'Pending Verification',
+                'pending' => 'Pending',
+                'failed' => 'Failed',
+                'expired' => 'Expired',
+                default => Str::of($status)->replace('_', ' ')->title()->toString(),
+            };
+
+            $statusBadgeClass = match ($status) {
+                'paid' => 'bg-success',
+                'processing', 'pending' => 'bg-warning text-dark',
+                'failed', 'expired' => 'bg-danger',
+                default => 'bg-secondary',
+            };
+
+            $risk = $this->buildTransactionRiskLabel($settlement, $duplicateReferences);
+
+            return [
+                'auction_code' => 'AUC' . str_pad((string) $settlement->lot_id, 4, '0', STR_PAD_LEFT),
+                'buyer_name' => $buyer?->name ?: 'N/A',
+                'company_name' => $buyer?->company_legal_name ?: ($buyer?->company_name ?: 'N/A'),
+                'amount' => (float) $settlement->amount,
+                'payment_type' => $providerLabel,
+                'status_label' => $statusLabel,
+                'status_badge_class' => $statusBadgeClass,
+                'risk_label' => $risk['label'],
+                'risk_badge_class' => $risk['badge_class'],
+                'date_label' => optional($settlement->created_at)->format('d M Y') ?: '-',
+                'action_label' => $risk['action_label'],
+                'action_url' => $buyer ? route('admin.buyer-details', ['buyer' => $buyer->id]) : null,
+                'action_class' => $risk['action_class'],
+            ];
+        })->values()->all();
+
+        $paymentTypeOptions = Settlement::query()
+            ->selectRaw('COALESCE(NULLIF(payment_provider, ""), "manual") as provider')
+            ->distinct()
+            ->orderBy('provider')
+            ->pluck('provider')
+            ->map(fn ($provider) => [
+                'value' => (string) $provider,
+                'label' => Str::of((string) $provider)->replace('_', ' ')->title()->toString(),
+            ])
+            ->values()
+            ->all();
+
+        return array_merge($dashboardData, [
+            'transactionFilters' => $filters,
+            'transactionsPerPageOptions' => $allowedPerPage,
+            'paymentTypeOptions' => $paymentTypeOptions,
+            'transactionsRows' => $transactions,
+            'transactionsSummary' => [
+                'total' => $paginatedSettlements->total(),
+                'successful' => $paidCount,
+                'pending' => $pendingCount,
+                'failed' => $failedCount,
+            ],
+            'transactionsPagination' => [
+                'current_page' => $paginatedSettlements->currentPage(),
+                'last_page' => $paginatedSettlements->lastPage(),
+                'per_page' => $paginatedSettlements->perPage(),
+                'total' => $paginatedSettlements->total(),
+                'from' => $paginatedSettlements->firstItem(),
+                'to' => $paginatedSettlements->lastItem(),
+                'has_more_pages' => $paginatedSettlements->hasMorePages(),
+            ],
+        ]);
+    }
+
+    private function buildTransactionRiskLabel(Settlement $settlement, \Illuminate\Support\Collection $duplicateReferences): array
+    {
+        $reference = (string) ($settlement->payment_reference ?? '');
+        $status = Str::lower((string) $settlement->status);
+        $provider = Str::lower((string) ($settlement->payment_provider ?? ''));
+
+        if ($reference !== '' && isset($duplicateReferences[$reference])) {
+            return [
+                'label' => 'Duplicate Reference',
+                'badge_class' => 'bg-danger',
+                'action_label' => 'Review',
+                'action_class' => 'btn-outline-danger',
+            ];
+        }
+
+        if ($status === 'expired') {
+            return [
+                'label' => 'Expired Window',
+                'badge_class' => 'bg-danger',
+                'action_label' => 'Investigate',
+                'action_class' => 'btn-danger',
+            ];
+        }
+
+        if ($status === 'failed') {
+            return [
+                'label' => 'Failed Payment',
+                'badge_class' => 'bg-danger',
+                'action_label' => 'Review',
+                'action_class' => 'btn-outline-danger',
+            ];
+        }
+
+        if ($status === 'processing') {
+            return [
+                'label' => 'Needs Verification',
+                'badge_class' => 'bg-warning text-dark',
+                'action_label' => 'Review',
+                'action_class' => 'btn-outline-primary',
+            ];
+        }
+
+        if ($status === 'pending' && in_array($provider, ['bank_transfer', 'waafipay'], true)) {
+            return [
+                'label' => 'Awaiting Payment Proof',
+                'badge_class' => 'bg-warning text-dark',
+                'action_label' => 'Follow Up',
+                'action_class' => 'btn-outline-primary',
+            ];
+        }
+
+        return [
+            'label' => 'No Risk',
+            'badge_class' => 'bg-light text-dark border',
+            'action_label' => 'View',
+            'action_class' => 'btn-outline-primary',
+        ];
     }
 
     private function extractStoredPaths(?string $value): array

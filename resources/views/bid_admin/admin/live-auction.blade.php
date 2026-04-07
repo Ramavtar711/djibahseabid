@@ -197,7 +197,7 @@
                                 </div>
                                 <div class="data-row">
                                     <span class="data-label">Quantity</span>
-                                    <span class="data-value">{{ number_format($item['quantity'], 2) }} kg <span class="timer {{ $item['time_left_class'] }}">{{ $item['time_left_label'] }}</span></span>
+                                    <span class="data-value">{{ number_format($item['quantity'], 2) }} kg <span class="timer js-live-auction-timer {{ $item['time_left_class'] }}" data-end-at="{{ $item['auction_end_at'] ?? '' }}">{{ $item['time_left_label'] }}</span></span>
                                 </div>
                                 <div class="data-row">
                                     <span class="data-label">Bids</span>
@@ -266,7 +266,7 @@ function renderLiveAuctionItems(items) {
                 </div>
                 <div class="data-row">
                     <span class="data-label">Quantity</span>
-                    <span class="data-value">${formatNumber(item.quantity, 2)} kg <span class="timer ${escapeHtml(item.time_left_class || '')}">${escapeHtml(item.time_left_label || 'Live')}</span></span>
+                    <span class="data-value">${formatNumber(item.quantity, 2)} kg <span class="timer js-live-auction-timer ${escapeHtml(item.time_left_class || '')}" data-end-at="${escapeHtml(item.auction_end_at || '')}">${escapeHtml(item.time_left_label || 'Live')}</span></span>
                 </div>
                 <div class="data-row">
                     <span class="data-label">Bids</span>
@@ -280,6 +280,55 @@ function renderLiveAuctionItems(items) {
             </div>
         </div>
     `).join('');
+
+    updateLiveAuctionCountdowns();
+}
+
+function getLiveAuctionCountdownClass(remainingMs) {
+    if (remainingMs <= 5 * 60 * 1000) return 'text-danger';
+    if (remainingMs <= 30 * 60 * 1000) return 'text-warning';
+    return 'text-success';
+}
+
+function formatLiveAuctionCountdown(endAt) {
+    if (!endAt) return 'Live';
+
+    const endTime = new Date(endAt).getTime();
+    if (Number.isNaN(endTime)) return 'Live';
+
+    const remainingMs = Math.max(0, endTime - Date.now());
+    const totalSeconds = Math.floor(remainingMs / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    const ss = String(seconds).padStart(2, '0');
+
+    if (days > 0) {
+        return `${days}d ${hh}:${mm}:${ss}`;
+    }
+
+    return `${hh}:${mm}:${ss}`;
+}
+
+function updateLiveAuctionCountdowns() {
+    document.querySelectorAll('.js-live-auction-timer').forEach((timerEl) => {
+        const endAt = timerEl.getAttribute('data-end-at');
+        const endTime = endAt ? new Date(endAt).getTime() : NaN;
+
+        timerEl.textContent = formatLiveAuctionCountdown(endAt);
+        timerEl.classList.remove('text-success', 'text-warning', 'text-danger');
+
+        if (!Number.isNaN(endTime)) {
+            const remainingMs = Math.max(0, endTime - Date.now());
+            timerEl.classList.add(getLiveAuctionCountdownClass(remainingMs));
+        } else {
+            timerEl.classList.add('text-success');
+        }
+    });
 }
 
 function applyLiveAuctionData(data) {
@@ -430,6 +479,8 @@ document.getElementById('liveAuctionGrid')?.addEventListener('click', function (
 });
 
 setInterval(refreshLiveAuctionData, 15000);
+setInterval(updateLiveAuctionCountdowns, 1000);
+updateLiveAuctionCountdowns();
 </script>
 
 @include('bid_admin.admin.include.footer')

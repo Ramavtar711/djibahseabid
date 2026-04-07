@@ -20,3 +20,7 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 Broadcast::channel('lot.{id}', function () {
     return true;
 });
+
+Broadcast::channel('dashboard.admin', function () {
+    return true;
+});

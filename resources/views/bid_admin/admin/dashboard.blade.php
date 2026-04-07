@@ -271,7 +271,7 @@
                                         <small class="text-muted">{{ $lot['seller_name'] }}</small>
                                         <div class="d-flex justify-content-between mt-2 small"><span class="text-muted">Current Bid</span><span class="fw-bold">${{ number_format($lot['current_bid'], 2) }}/kg</span></div>
                                         <div class="d-flex justify-content-between small"><span class="text-muted">Bids</span><span class="fw-bold">{{ $lot['bids_count'] }}</span></div>
-                                        <div class="d-flex justify-content-between mb-3 small"><span class="text-muted">Quantity</span><span class="badge bg-light text-dark border">{{ number_format($lot['quantity'], 2) }} kg <span class="{{ $lot['time_left_class'] }} ms-1">{{ $lot['time_left_label'] }}</span></span></div>
+                                        <div class="d-flex justify-content-between mb-3 small"><span class="text-muted">Quantity</span><span class="badge bg-light text-dark border">{{ number_format($lot['quantity'], 2) }} kg <span class="js-auction-timer {{ $lot['time_left_class'] }} ms-1" data-end-at="{{ $lot['auction_end_at'] ?? '' }}">{{ $lot['time_left_label'] }}</span></span></div>
                                         <a class="btn btn-primary btn-sm w-100" href="{{ route('admin.live-auction') }}">Open Live Auction</a>
                                     </div>
                                 </div>
@@ -398,6 +398,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" data-cfasync="false"></script>
+<script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/laravel-echo@1/dist/echo.iife.js"></script>
 <script>
 function scrollSlider(amount) {
     const slider = document.getElementById('auctionSlider');
@@ -424,11 +426,17 @@ function escapeHtml(value) {
 const liveAuctionUrl = @json(route('admin.live-auction'));
 const upcomingAuctionUrl = @json(route('admin.upcoming-auction'));
 const dashboardDataUrl = @json(route('admin.dashboard.data'));
+const pusherKey = @json(config('broadcasting.connections.pusher.key'));
+const pusherHost = @json(config('broadcasting.connections.pusher.options.host'));
+const pusherPort = @json(config('broadcasting.connections.pusher.options.port'));
+const pusherScheme = @json(config('broadcasting.connections.pusher.options.scheme'));
 
 let volumeChart;
 let transactionChart;
 let revenueChart;
 let refreshInFlight = false;
+let refreshTimer;
+let websocketConnected = false;
 
 const initialDashboardData = {
     chartLabels: @json($chartLabels),
@@ -457,12 +465,61 @@ function renderActiveLots(activeLots) {
                     <small class="text-muted">${escapeHtml(lot.seller_name || 'Seller')}</small>
                     <div class="d-flex justify-content-between mt-2 small"><span class="text-muted">Current Bid</span><span class="fw-bold">${formatMoney(lot.current_bid)}/kg</span></div>
                     <div class="d-flex justify-content-between small"><span class="text-muted">Bids</span><span class="fw-bold">${formatNumber(lot.bids_count)}</span></div>
-                    <div class="d-flex justify-content-between mb-3 small"><span class="text-muted">Quantity</span><span class="badge bg-light text-dark border">${formatNumber(lot.quantity, 2)} kg <span class="${escapeHtml(lot.time_left_class || 'text-success')} ms-1">${escapeHtml(lot.time_left_label || 'Live')}</span></span></div>
+                    <div class="d-flex justify-content-between mb-3 small"><span class="text-muted">Quantity</span><span class="badge bg-light text-dark border">${formatNumber(lot.quantity, 2)} kg <span class="js-auction-timer ${escapeHtml(lot.time_left_class || 'text-success')} ms-1" data-end-at="${escapeHtml(lot.auction_end_at || '')}">${escapeHtml(lot.time_left_label || 'Live')}</span></span></div>
                     <a class="btn btn-primary btn-sm w-100" href="${liveAuctionUrl}">Open Live Auction</a>
                 </div>
             </div>
         </div>
     `).join('');
+
+    updateLiveCountdowns();
+}
+
+function getCountdownClass(remainingMs) {
+    if (remainingMs <= 5 * 60 * 1000) return 'text-danger';
+    if (remainingMs <= 30 * 60 * 1000) return 'text-warning';
+    return 'text-success';
+}
+
+function formatCountdownLabel(endAt) {
+    if (!endAt) return 'Live';
+
+    const endTime = new Date(endAt).getTime();
+    if (Number.isNaN(endTime)) return 'Live';
+
+    const remainingMs = Math.max(0, endTime - Date.now());
+    const totalSeconds = Math.floor(remainingMs / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    const ss = String(seconds).padStart(2, '0');
+
+    if (days > 0) {
+        return `${days}d ${hh}:${mm}:${ss}`;
+    }
+
+    return `${hh}:${mm}:${ss}`;
+}
+
+function updateLiveCountdowns() {
+    document.querySelectorAll('.js-auction-timer').forEach((timerEl) => {
+        const endAt = timerEl.getAttribute('data-end-at');
+        const endTime = endAt ? new Date(endAt).getTime() : NaN;
+
+        timerEl.textContent = formatCountdownLabel(endAt);
+        timerEl.classList.remove('text-success', 'text-warning', 'text-danger');
+
+        if (!Number.isNaN(endTime)) {
+            const remainingMs = Math.max(0, endTime - Date.now());
+            timerEl.classList.add(getCountdownClass(remainingMs));
+        } else {
+            timerEl.classList.add('text-success');
+        }
+    });
 }
 
 function renderAlerts(alerts) {
@@ -608,10 +665,14 @@ async function refreshDashboardData() {
     document.getElementById('dashboardRefreshState').textContent = 'Syncing...';
 
     try {
-        const response = await fetch(dashboardDataUrl, {
+        const requestUrl = new URL(dashboardDataUrl, window.location.origin);
+        requestUrl.searchParams.set('_', Date.now());
+        const response = await fetch(requestUrl.toString(), {
+            cache: 'no-store',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
             }
         });
 
@@ -630,35 +691,83 @@ async function refreshDashboardData() {
     }
 }
 
-volumeChart = new Chart(document.getElementById('volumeChart'), {
-    type: 'bar',
-    data: {
-        labels: initialDashboardData.chartLabels,
-        datasets: [{ data: initialDashboardData.volumeChartData, backgroundColor: '#4e73df', borderRadius: 6 }]
-    },
-    options: { plugins: { legend: { display: false } } }
-});
+function initializeCharts() {
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js failed to load. Live dashboard refresh will continue without charts.');
+        return;
+    }
 
-transactionChart = new Chart(document.getElementById('transactionChart'), {
-    data: {
-        labels: initialDashboardData.chartLabels,
-        datasets: [
-            { type: 'bar', data: initialDashboardData.transactionBarData, backgroundColor: '#a0c4ff', borderRadius: 6 },
-            { type: 'line', data: initialDashboardData.transactionLineData, borderColor: '#4e73df', tension: 0.4, fill: false }
-        ]
-    },
-    options: { plugins: { legend: { display: false } } }
-});
+    volumeChart = new Chart(document.getElementById('volumeChart'), {
+        type: 'bar',
+        data: {
+            labels: initialDashboardData.chartLabels,
+            datasets: [{ data: initialDashboardData.volumeChartData, backgroundColor: '#4e73df', borderRadius: 6 }]
+        },
+        options: { plugins: { legend: { display: false } } }
+    });
 
-revenueChart = new Chart(document.getElementById('revenueChart'), {
-    type: 'line',
-    data: {
-        labels: initialDashboardData.chartLabels,
-        datasets: [{ data: initialDashboardData.revenueChartData, borderColor: '#4338ca', backgroundColor: 'rgba(67, 56, 202, 0.1)', fill: true, tension: 0.4 }]
-    },
-    options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
-});
+    transactionChart = new Chart(document.getElementById('transactionChart'), {
+        data: {
+            labels: initialDashboardData.chartLabels,
+            datasets: [
+                { type: 'bar', data: initialDashboardData.transactionBarData, backgroundColor: '#a0c4ff', borderRadius: 6 },
+                { type: 'line', data: initialDashboardData.transactionLineData, borderColor: '#4e73df', tension: 0.4, fill: false }
+            ]
+        },
+        options: { plugins: { legend: { display: false } } }
+    });
 
-setInterval(refreshDashboardData, 15000);
+    revenueChart = new Chart(document.getElementById('revenueChart'), {
+        type: 'line',
+        data: {
+            labels: initialDashboardData.chartLabels,
+            datasets: [{ data: initialDashboardData.revenueChartData, borderColor: '#4338ca', backgroundColor: 'rgba(67, 56, 202, 0.1)', fill: true, tension: 0.4 }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
+    });
+}
+
+function startDashboardRefresh() {
+    refreshDashboardData();
+    refreshTimer = window.setInterval(refreshDashboardData, 15000);
+    window.setInterval(updateLiveCountdowns, 1000);
+}
+
+function initializeDashboardRealtime() {
+    if (window.Echo === undefined && window.Pusher && typeof Echo !== 'undefined' && pusherKey) {
+        window.Echo = new Echo({
+            broadcaster: 'pusher',
+            key: pusherKey,
+            wsHost: pusherHost || window.location.hostname,
+            wsPort: pusherPort || 6001,
+            wssPort: pusherPort || 6001,
+            forceTLS: pusherScheme === 'https',
+            disableStats: true,
+            enabledTransports: ['ws', 'wss'],
+        });
+    }
+
+    if (!window.Echo) {
+        return;
+    }
+
+    window.Echo.channel('dashboard.admin')
+        .listen('.dashboard.updated', function () {
+            websocketConnected = true;
+            document.getElementById('dashboardRefreshState').textContent = 'Live websocket sync';
+            refreshDashboardData();
+        });
+}
+
+initializeCharts();
+startDashboardRefresh();
+initializeDashboardRealtime();
+updateLiveCountdowns();
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        refreshDashboardData();
+    }
+});
 </script>
 @include('bid_admin.admin.include.footer')
