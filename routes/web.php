@@ -76,6 +76,7 @@ Route::prefix('admin')->group(function () {
     Route::get('/transactions', [AdminController::class, 'transactions'])->name('admin.transactions');
     Route::get('/transactions/data', [AdminController::class, 'transactionsData'])->name('admin.transactions.data');
     Route::get('/bank-transfer', [AdminController::class, 'bankTransfer'])->name('admin.bank-transfer');
+    Route::get('/bank-transfer/data', [AdminController::class, 'bankTransferData'])->name('admin.bank-transfer.data');
     Route::get('/risk-monitoring', [AdminController::class, 'riskMonitoring'])->name('admin.risk-monitoring');
     Route::get('/alets', [AdminController::class, 'alets'])->name('admin.alets');
     Route::get('/settings', [AdminController::class, 'settings'])->name('admin.settings');

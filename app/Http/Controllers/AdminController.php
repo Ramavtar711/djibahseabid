@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Services\SettlementLifecycleService;
 
 class AdminController extends Controller
 {
@@ -1353,7 +1354,14 @@ class AdminController extends Controller
     {
         return response()->json($this->buildTransactionsData($request));
     }
-    public function bankTransfer(): View { return view('bid_admin.admin.bank-transfer'); }
+    public function bankTransfer(Request $request): View
+    {
+        return view('bid_admin.admin.bank-transfer', $this->buildBankTransferData($request));
+    }
+    public function bankTransferData(Request $request): JsonResponse
+    {
+        return response()->json($this->buildBankTransferData($request));
+    }
     public function riskMonitoring(): View { return view('bid_admin.admin.risk-monitoring'); }
     public function alets(): View { return view('bid_admin.admin.alets'); }
     public function settings(): View { return view('bid_admin.admin.settings'); }
@@ -2374,6 +2382,182 @@ class AdminController extends Controller
                 'failed' => $failedCount,
             ],
             'transactionsPagination' => [
+                'current_page' => $paginatedSettlements->currentPage(),
+                'last_page' => $paginatedSettlements->lastPage(),
+                'per_page' => $paginatedSettlements->perPage(),
+                'total' => $paginatedSettlements->total(),
+                'from' => $paginatedSettlements->firstItem(),
+                'to' => $paginatedSettlements->lastItem(),
+                'has_more_pages' => $paginatedSettlements->hasMorePages(),
+            ],
+        ]);
+    }
+
+    private function buildBankTransferData(Request $request): array
+    {
+        $dashboardData = $this->buildDashboardData();
+        $allowedPerPage = [10, 15, 25, 50];
+        $perPage = (int) $request->query('per_page', 10);
+        if (! in_array($perPage, $allowedPerPage, true)) {
+            $perPage = 10;
+        }
+
+        $filters = [
+            'search' => trim((string) $request->query('search', '')),
+            'status' => trim((string) $request->query('status', '')),
+            'country' => trim((string) $request->query('country', '')),
+            'date' => trim((string) $request->query('date', '')),
+            'per_page' => (string) $perPage,
+        ];
+
+        $statusAliases = [
+            'pending' => ['pending'],
+            'under_review' => ['processing'],
+            'approved' => ['paid'],
+            'rejected' => ['failed', 'expired'],
+        ];
+
+        $query = Settlement::query()
+            ->with([
+                'buyer:id,name,company_legal_name,company_name,country',
+                'lot:id,title,species,quantity,auction_end_at',
+            ])
+            ->where('payment_provider', 'bank_transfer')
+            ->latest('created_at');
+
+        if ($filters['search'] !== '') {
+            $search = $filters['search'];
+            $query->where(function ($builder) use ($search) {
+                $numericSearch = preg_replace('/\D+/', '', $search);
+
+                if ($numericSearch !== '') {
+                    $builder->orWhere('lot_id', 'like', '%' . $numericSearch . '%');
+                }
+
+                $builder->orWhere('payment_reference', 'like', '%' . $search . '%')
+                    ->orWhereHas('buyer', function ($buyerQuery) use ($search) {
+                        $buyerQuery->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('company_legal_name', 'like', '%' . $search . '%')
+                            ->orWhere('company_name', 'like', '%' . $search . '%');
+                    })
+                    ->orWhereHas('lot', function ($lotQuery) use ($search) {
+                        $lotQuery->where('title', 'like', '%' . $search . '%')
+                            ->orWhere('species', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        if ($filters['status'] !== '' && isset($statusAliases[$filters['status']])) {
+            $query->whereIn('status', $statusAliases[$filters['status']]);
+        }
+
+        if ($filters['country'] !== '') {
+            $country = Str::lower($filters['country']);
+            $query->whereHas('buyer', function ($buyerQuery) use ($country) {
+                $buyerQuery->whereRaw('LOWER(COALESCE(country, "")) = ?', [$country]);
+            });
+        }
+
+        if ($filters['date'] !== '') {
+            $query->whereDate('created_at', $filters['date']);
+        }
+
+        $summaryQuery = clone $query;
+        $totalTransfers = (clone $summaryQuery)->count();
+        $validatedCount = (clone $summaryQuery)->where('status', 'paid')->count();
+        $pendingCount = (clone $summaryQuery)->whereIn('status', ['pending', 'processing'])->count();
+        $rejectedCount = (clone $summaryQuery)->whereIn('status', ['failed', 'expired'])->count();
+
+        $paginatedSettlements = $query
+            ->paginate($perPage)
+            ->appends(array_filter($filters, fn ($value) => $value !== ''));
+
+        $deadlineService = app(SettlementLifecycleService::class);
+
+        $rows = $paginatedSettlements->getCollection()
+            ->map(function (Settlement $settlement) use ($deadlineService) {
+                $buyer = $settlement->buyer;
+                $lot = $settlement->lot;
+                $status = Str::lower((string) $settlement->status);
+
+                $statusLabel = match ($status) {
+                    'paid' => 'Approved',
+                    'processing' => 'Under Review',
+                    'pending' => 'Pending',
+                    'failed', 'expired' => 'Rejected',
+                    default => Str::of($status)->replace('_', ' ')->title()->toString(),
+                };
+
+                $statusBadgeClass = match ($status) {
+                    'paid' => 'bg-success',
+                    'processing' => 'bg-info',
+                    'pending' => 'bg-warning text-dark',
+                    'failed', 'expired' => 'bg-danger',
+                    default => 'bg-secondary',
+                };
+
+                $action = match ($status) {
+                    'pending' => ['label' => 'Follow Up', 'class' => 'btn-success'],
+                    'processing' => ['label' => 'Review', 'class' => 'btn-primary'],
+                    'paid' => ['label' => 'View', 'class' => 'btn-outline-secondary'],
+                    default => ['label' => 'Details', 'class' => 'btn-outline-secondary'],
+                };
+
+                $lotDescriptionParts = array_filter([
+                    $lot?->title,
+                    $lot?->species,
+                    $lot && $lot->quantity !== null ? number_format((float) $lot->quantity, 0) . 'kg' : null,
+                ]);
+
+                $deadlineAt = $deadlineService->paymentDeadlineFor($settlement);
+
+                return [
+                    'buyer_name' => $buyer?->name ?: 'N/A',
+                    'company_name' => $buyer?->company_legal_name ?: ($buyer?->company_name ?: 'N/A'),
+                    'country' => $buyer?->country ?: 'N/A',
+                    'auction_code' => 'AUC' . str_pad((string) $settlement->lot_id, 4, '0', STR_PAD_LEFT),
+                    'lot_description' => $lotDescriptionParts ? implode(' - ', $lotDescriptionParts) : 'N/A',
+                    'amount' => (float) $settlement->amount,
+                    'auction_close_label' => optional($lot?->auction_end_at)->format('d M Y') ?: '-',
+                    'payment_deadline_label' => $deadlineAt?->format('d M Y') ?: '-',
+                    'status_label' => $statusLabel,
+                    'status_badge_class' => $statusBadgeClass,
+                    'action_label' => $action['label'],
+                    'action_class' => $action['class'],
+                    'action_url' => $buyer ? route('admin.buyer-details', ['buyer' => $buyer->id]) : null,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $countryOptions = Settlement::query()
+            ->join('users', 'users.id', '=', 'settlements.buyer_id')
+            ->where('settlements.payment_provider', 'bank_transfer')
+            ->whereNotNull('users.country')
+            ->where('users.country', '!=', '')
+            ->selectRaw('users.country as country')
+            ->distinct()
+            ->orderBy('users.country')
+            ->pluck('country')
+            ->map(fn ($country) => [
+                'value' => (string) $country,
+                'label' => (string) $country,
+            ])
+            ->values()
+            ->all();
+
+        return array_merge($dashboardData, [
+            'bankTransferFilters' => $filters,
+            'bankTransferPerPageOptions' => $allowedPerPage,
+            'bankTransferCountryOptions' => $countryOptions,
+            'bankTransferSummary' => [
+                'total' => $totalTransfers,
+                'validated' => $validatedCount,
+                'pending' => $pendingCount,
+                'rejected' => $rejectedCount,
+            ],
+            'bankTransferRows' => $rows,
+            'bankTransferPagination' => [
                 'current_page' => $paginatedSettlements->currentPage(),
                 'last_page' => $paginatedSettlements->lastPage(),
                 'per_page' => $paginatedSettlements->perPage(),
