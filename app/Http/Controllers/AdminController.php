@@ -1362,7 +1362,10 @@ class AdminController extends Controller
     {
         return response()->json($this->buildBankTransferData($request));
     }
-    public function riskMonitoring(): View { return view('bid_admin.admin.risk-monitoring'); }
+    public function riskMonitoring(): View
+    {
+        return view('bid_admin.admin.risk-monitoring', $this->buildRiskMonitoringData());
+    }
     public function alets(): View { return view('bid_admin.admin.alets'); }
     public function settings(): View { return view('bid_admin.admin.settings'); }
 
@@ -1526,6 +1529,264 @@ class AdminController extends Controller
             'transactionLineData' => $dateLabels->map(fn ($date) => round((float) ($bidsByDay[$date->toDateString()] ?? 0), 2))->all(),
             'revenueChartData' => $dateLabels->map(fn ($date) => round((float) ($transactionsByDay[$date->toDateString()] ?? 0), 2))->all(),
         ];
+    }
+
+    private function buildRiskMonitoringData(): array
+    {
+        $dashboardData = $this->buildDashboardData();
+        $now = now();
+        $todayStart = $now->copy()->startOfDay();
+        $tomorrowStart = $todayStart->copy()->addDay();
+        $twentyFourHoursAgo = $now->copy()->subDay();
+        $months = collect(range(5, 1))
+            ->map(fn (int $offset) => $now->copy()->subMonths($offset)->startOfMonth())
+            ->push($now->copy()->startOfMonth())
+            ->values();
+
+        $buyersOnlineCount = (int) Bid::query()
+            ->where('created_at', '>=', $twentyFourHoursAgo)
+            ->distinct('buyer_id')
+            ->count('buyer_id');
+
+        $duplicateReferences = Settlement::query()
+            ->whereNotNull('payment_reference')
+            ->where('payment_reference', '!=', '')
+            ->selectRaw('payment_reference, COUNT(*) as total')
+            ->groupBy('payment_reference')
+            ->havingRaw('COUNT(*) > 1')
+            ->pluck('total', 'payment_reference');
+
+        $riskCases = collect();
+
+        $settlementCases = Settlement::query()
+            ->with([
+                'buyer:id,name,company_legal_name,company_name,country,bank_transfer_validated,type',
+                'seller:id,name,company_name,country,type',
+                'lot:id,title',
+            ])
+            ->whereIn('status', ['pending', 'processing', 'failed', 'expired'])
+            ->latest('created_at')
+            ->take(50)
+            ->get()
+            ->map(function (Settlement $settlement) use ($duplicateReferences, $now) {
+                $risk = $this->buildTransactionRiskLabel($settlement, $duplicateReferences);
+                $buyer = $settlement->buyer;
+
+                return [
+                    'account_name' => $buyer?->company_legal_name ?: ($buyer?->company_name ?: ($buyer?->name ?: 'Buyer #' . $settlement->buyer_id)),
+                    'issue_type' => $risk['label'],
+                    'auction_code' => 'AUC' . str_pad((string) $settlement->lot_id, 4, '0', STR_PAD_LEFT),
+                    'country' => $buyer?->country ?: 'N/A',
+                    'last_activity_label' => $this->formatRiskActivityTime($settlement->updated_at ?: $settlement->created_at, $now),
+                    'risk_score' => $this->settlementRiskScore($settlement, $duplicateReferences),
+                    'status_label' => $this->riskStatusFromScore($this->settlementRiskScore($settlement, $duplicateReferences)),
+                    'status_badge_class' => $this->riskBadgeClassFromScore($this->settlementRiskScore($settlement, $duplicateReferences)),
+                    'action_label' => $risk['action_label'],
+                    'action_url' => $buyer ? route('admin.buyer-details', ['buyer' => $buyer->id]) : route('admin.transactions'),
+                    'action_class' => $risk['action_class'],
+                ];
+            });
+
+        $riskCases = $riskCases->concat($settlementCases);
+
+        $buyerKycCases = User::query()
+            ->where('type', 'buyer')
+            ->where(function ($query) {
+                $query->whereNull('company_registration_file')
+                    ->orWhere('company_registration_file', '')
+                    ->orWhereNull('id_file')
+                    ->orWhere('id_file', '')
+                    ->orWhereNull('import_license_file')
+                    ->orWhere('import_license_file', '')
+                    ->orWhere('bank_transfer_validated', false);
+            })
+            ->withCount([
+                'bids as recent_bids_count' => fn ($query) => $query->where('created_at', '>=', now()->subDays(7)),
+            ])
+            ->latest('updated_at')
+            ->take(20)
+            ->get()
+            ->map(function (User $buyer) use ($now) {
+                $score = $buyer->bank_transfer_validated ? 62 : 74;
+                if ($buyer->recent_bids_count >= 5) {
+                    $score += 10;
+                }
+
+                return [
+                    'account_name' => $buyer->company_legal_name ?: ($buyer->company_name ?: $buyer->name),
+                    'issue_type' => $buyer->bank_transfer_validated ? 'Pending Buyer KYC' : 'Unverified Bank Account',
+                    'auction_code' => $buyer->recent_bids_count > 0 ? $buyer->recent_bids_count . ' active bid(s)' : 'No active bids',
+                    'country' => $buyer->country ?: 'N/A',
+                    'last_activity_label' => $this->formatRiskActivityTime($buyer->updated_at ?: $buyer->created_at, $now),
+                    'risk_score' => min(95, $score),
+                    'status_label' => $this->riskStatusFromScore(min(95, $score)),
+                    'status_badge_class' => $this->riskBadgeClassFromScore(min(95, $score)),
+                    'action_label' => 'Review',
+                    'action_url' => route('admin.buyer-details', ['buyer' => $buyer->id]),
+                    'action_class' => 'btn-outline-primary',
+                ];
+            });
+
+        $riskCases = $riskCases->concat($buyerKycCases);
+
+        $sellerComplianceCases = User::query()
+            ->where('type', 'seller')
+            ->where(function ($query) {
+                $query->whereNull('trade_license_file')
+                    ->orWhere('trade_license_file', '')
+                    ->orWhereNull('certificates_file')
+                    ->orWhere('certificates_file', '');
+            })
+            ->withCount([
+                'lots as live_lots_count' => fn ($query) => $query->whereIn('status', ['active', 'active auction', 'scheduled auction']),
+            ])
+            ->latest('updated_at')
+            ->take(20)
+            ->get()
+            ->filter(fn (User $seller) => $seller->live_lots_count > 0)
+            ->map(function (User $seller) use ($now) {
+                $score = $seller->trade_license_file ? 59 : 79;
+                if ($seller->live_lots_count >= 3) {
+                    $score += 8;
+                }
+
+                return [
+                    'account_name' => $seller->company_name ?: $seller->name,
+                    'issue_type' => $seller->trade_license_file ? 'Missing Seller Certificates' : 'Missing Trade License',
+                    'auction_code' => $seller->live_lots_count . ' live lot(s)',
+                    'country' => $seller->country ?: 'N/A',
+                    'last_activity_label' => $this->formatRiskActivityTime($seller->updated_at ?: $seller->created_at, $now),
+                    'risk_score' => min(92, $score),
+                    'status_label' => $this->riskStatusFromScore(min(92, $score)),
+                    'status_badge_class' => $this->riskBadgeClassFromScore(min(92, $score)),
+                    'action_label' => 'Review',
+                    'action_url' => route('admin.seller-details', ['seller' => $seller->id]),
+                    'action_class' => 'btn-outline-primary',
+                ];
+            });
+
+        $riskCases = $riskCases->concat($sellerComplianceCases);
+
+        $biddingSpikeCases = Bid::query()
+            ->selectRaw('buyer_id, COUNT(*) as bid_count, COUNT(DISTINCT lot_id) as lot_count, MAX(created_at) as last_bid_at')
+            ->where('created_at', '>=', $twentyFourHoursAgo)
+            ->groupBy('buyer_id')
+            ->havingRaw('COUNT(*) >= 5 AND COUNT(DISTINCT lot_id) >= 3')
+            ->orderByDesc('bid_count')
+            ->take(10)
+            ->get();
+
+        if ($biddingSpikeCases->isNotEmpty()) {
+            $buyers = User::query()
+                ->whereIn('id', $biddingSpikeCases->pluck('buyer_id'))
+                ->get()
+                ->keyBy('id');
+
+            $riskCases = $riskCases->concat($biddingSpikeCases->map(function ($case) use ($buyers, $now) {
+                /** @var User|null $buyer */
+                $buyer = $buyers->get($case->buyer_id);
+                $score = min(90, 66 + ((int) $case->bid_count * 2));
+
+                return [
+                    'account_name' => $buyer?->company_legal_name ?: ($buyer?->company_name ?: ($buyer?->name ?: 'Buyer #' . $case->buyer_id)),
+                    'issue_type' => 'Bidding Spike Detection',
+                    'auction_code' => (int) $case->lot_count . ' auctions',
+                    'country' => $buyer?->country ?: 'N/A',
+                    'last_activity_label' => $this->formatRiskActivityTime($case->last_bid_at, $now),
+                    'risk_score' => $score,
+                    'status_label' => $this->riskStatusFromScore($score),
+                    'status_badge_class' => $this->riskBadgeClassFromScore($score),
+                    'action_label' => 'Investigate',
+                    'action_url' => $buyer ? route('admin.buyer-details', ['buyer' => $buyer->id]) : route('admin.transactions'),
+                    'action_class' => 'btn-outline-danger',
+                ];
+            }));
+        }
+
+        $riskCases = $riskCases
+            ->sortByDesc('risk_score')
+            ->values();
+
+        $highRiskAccountCount = $riskCases
+            ->groupBy('account_name')
+            ->count(function ($casesForAccount) {
+                return collect($casesForAccount)->max('risk_score') >= 80;
+            });
+
+        $pendingBuyerKycCount = (int) User::query()
+            ->where('type', 'buyer')
+            ->where(function ($query) {
+                $query->whereNull('company_registration_file')
+                    ->orWhere('company_registration_file', '')
+                    ->orWhereNull('id_file')
+                    ->orWhere('id_file', '')
+                    ->orWhereNull('import_license_file')
+                    ->orWhere('import_license_file', '')
+                    ->orWhere('bank_transfer_validated', false);
+            })
+            ->count();
+
+        $openReviewCount = (int) Settlement::query()
+            ->whereIn('status', ['pending', 'processing'])
+            ->count();
+
+        $riskDistributionData = [
+            $riskCases->where('risk_score', '<', 60)->count(),
+            $riskCases->filter(fn (array $case) => $case['risk_score'] >= 60 && $case['risk_score'] < 80)->count(),
+            $riskCases->where('risk_score', '>=', 80)->count(),
+        ];
+
+        $monthlyRiskData = $months->map(function ($monthStart) {
+            $monthEnd = $monthStart->copy()->endOfMonth();
+            $settlementRiskCount = Settlement::query()
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->whereIn('status', ['processing', 'failed', 'expired'])
+                ->count();
+
+            $kycRiskCount = User::query()
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->where(function ($query) {
+                    $query->where(function ($buyerQuery) {
+                        $buyerQuery->where('type', 'buyer')
+                            ->where(function ($documentQuery) {
+                                $documentQuery->whereNull('company_registration_file')
+                                    ->orWhere('company_registration_file', '')
+                                    ->orWhereNull('id_file')
+                                    ->orWhere('id_file', '')
+                                    ->orWhereNull('import_license_file')
+                                    ->orWhere('import_license_file', '');
+                            });
+                    })->orWhere(function ($sellerQuery) {
+                        $sellerQuery->where('type', 'seller')
+                            ->where(function ($documentQuery) {
+                                $documentQuery->whereNull('trade_license_file')
+                                    ->orWhere('trade_license_file', '');
+                            });
+                    });
+                })
+                ->count();
+
+            return $settlementRiskCount + $kycRiskCount;
+        })->values()->all();
+
+        return array_merge($dashboardData, [
+            'buyersOnlineCount' => $buyersOnlineCount,
+            'riskSummary' => [
+                'total_alerts' => $riskCases->count(),
+                'high_risk_accounts' => $highRiskAccountCount,
+                'pending_kyc' => $pendingBuyerKycCount,
+                'open_reviews' => $openReviewCount,
+            ],
+            'riskChartLabels' => ['Low Risk', 'Medium Risk', 'High Risk'],
+            'riskChartData' => $riskDistributionData,
+            'fraudTrendLabels' => $months->map(fn ($monthStart) => $monthStart->format('M'))->values()->all(),
+            'fraudTrendData' => $monthlyRiskData,
+            'riskCases' => $riskCases->take(10)->values()->all(),
+            'systemStatus' => $dashboardData['systemStatus'],
+            'liveAuctionsCount' => $dashboardData['liveAuctionsCount'],
+            'upcomingAuctionsCount' => $dashboardData['upcomingAuctionsCount'],
+            'revenueToday' => (float) Settlement::query()->whereBetween('created_at', [$todayStart, $tomorrowStart])->sum('amount'),
+        ]);
     }
 
     private function buildLiveAuctionData(): array
@@ -2626,6 +2887,90 @@ class AdminController extends Controller
             'action_label' => 'View',
             'action_class' => 'btn-outline-primary',
         ];
+    }
+
+    private function settlementRiskScore(Settlement $settlement, \Illuminate\Support\Collection $duplicateReferences): int
+    {
+        $status = Str::lower((string) $settlement->status);
+        $provider = Str::lower((string) ($settlement->payment_provider ?? ''));
+        $reference = (string) ($settlement->payment_reference ?? '');
+
+        $score = match ($status) {
+            'expired' => 94,
+            'failed' => 88,
+            'processing' => 71,
+            'pending' => 58,
+            default => 35,
+        };
+
+        if ($status === 'pending' && in_array($provider, ['bank_transfer', 'waafipay'], true)) {
+            $score += 10;
+        }
+
+        if ($reference !== '' && isset($duplicateReferences[$reference])) {
+            $score += 12;
+        }
+
+        return min(99, $score);
+    }
+
+    private function riskStatusFromScore(int $score): string
+    {
+        if ($score >= 90) {
+            return 'Critical';
+        }
+
+        if ($score >= 80) {
+            return 'High Risk';
+        }
+
+        if ($score >= 60) {
+            return 'Medium';
+        }
+
+        return 'Low Risk';
+    }
+
+    private function riskBadgeClassFromScore(int $score): string
+    {
+        if ($score >= 80) {
+            return 'bg-danger';
+        }
+
+        if ($score >= 60) {
+            return 'bg-warning text-dark';
+        }
+
+        return 'bg-success';
+    }
+
+    private function formatRiskActivityTime($timestamp, $now): string
+    {
+        if (! $timestamp) {
+            return 'N/A';
+        }
+
+        $minutes = abs($timestamp->diffInMinutes($now, false));
+
+        if ($minutes < 1) {
+            return 'Just now';
+        }
+
+        if ($minutes < 60) {
+            return $minutes . ' min ago';
+        }
+
+        $hours = abs($timestamp->diffInHours($now, false));
+        if ($hours < 24) {
+            return $hours . ' hour(s) ago';
+        }
+
+        $days = abs($timestamp->diffInDays($now, false));
+        if ($days <= 1) {
+            return 'Yesterday';
+        }
+
+        return $days . ' day(s) ago';
     }
 
     private function extractStoredPaths(?string $value): array
