@@ -27,6 +27,146 @@
       <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
       <script src="{{ asset('assets/js/layout.js') }}" type="text/javascript"></script>
       <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+      <style>
+         .admin-responsive-table {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+         }
+
+         .admin-responsive-table > table {
+            min-width: 720px;
+         }
+
+         @media (max-width: 1199.98px) {
+            .top-nav-search .logo-text {
+               font-size: 28px;
+            }
+
+            .header .user-menu {
+               margin-left: auto;
+            }
+         }
+
+         @media (max-width: 991.98px) {
+            .top-nav-search {
+               display: none;
+            }
+
+            .page-wrapper {
+               margin-left: 0 !important;
+               padding-top: 70px;
+            }
+
+            .page-wrapper .content {
+               padding: 18px 14px 22px;
+            }
+
+            .header .user-menu {
+               padding-right: 6px;
+            }
+
+            .header .user-menu .btn-menubar {
+               min-width: 38px;
+               min-height: 38px;
+               padding: 8px;
+            }
+
+            .dropdown-menu-lg {
+               width: min(360px, calc(100vw - 24px));
+            }
+
+            .status-header {
+               gap: 12px !important;
+               padding: 14px 16px !important;
+               border-radius: 14px !important;
+            }
+
+            .status-header .d-flex.gap-4,
+            .status-header .d-flex.gap-3 {
+               gap: 12px !important;
+            }
+
+            .status-header .fw-bold {
+               width: 100%;
+               text-align: left;
+            }
+
+            .alerts-shell,
+            .settings-card,
+            .card-soft,
+            .glass-card,
+            .page-card {
+               border-radius: 18px !important;
+            }
+         }
+
+         @media (max-width: 767.98px) {
+            body {
+               font-size: 14px;
+            }
+
+            .page-wrapper .content {
+               padding: 14px 10px 18px;
+            }
+
+            .header {
+               padding: 0 10px;
+            }
+
+            .header .flag-nav,
+            .header .notification_item {
+               margin-right: 8px !important;
+            }
+
+            .header .profile-dropdown .dropdown-menu,
+            .header .notification_item .dropdown-menu {
+               position: fixed !important;
+               top: 64px !important;
+               left: 12px !important;
+               right: 12px !important;
+               width: auto !important;
+               transform: none !important;
+            }
+
+            .content.container-fluid > .row,
+            .content .row {
+               --bs-gutter-x: 14px;
+            }
+
+            .status-pill {
+               font-size: 12px !important;
+            }
+
+            .page-heading,
+            .alerts-title,
+            .page-title {
+               font-size: 24px !important;
+               line-height: 1.2;
+            }
+
+            .btn,
+            .form-control,
+            .form-select {
+               min-height: 44px;
+            }
+
+            .settings-nav {
+               gap: 8px !important;
+            }
+
+            .settings-tab-btn {
+               padding: 11px 14px !important;
+               font-size: 14px;
+            }
+
+            .settings-card .card-body,
+            .card-soft,
+            .alerts-shell {
+               padding: 16px !important;
+            }
+         }
+      </style>
    </head>
    <body class="mini-sidebar">
       <div class="main-wrapper">

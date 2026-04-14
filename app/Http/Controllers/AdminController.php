@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\AdminDashboardUpdated;
 use App\Models\Admin;
 use App\Models\AppNotification;
+use App\Models\AppSetting;
 use App\Models\Bid;
 use App\Models\Lot;
 use App\Models\Settlement;
@@ -1366,8 +1367,96 @@ class AdminController extends Controller
     {
         return view('bid_admin.admin.risk-monitoring', $this->buildRiskMonitoringData());
     }
-    public function alets(): View { return view('bid_admin.admin.alets'); }
-    public function settings(): View { return view('bid_admin.admin.settings'); }
+    public function alets(): View
+    {
+        return view('bid_admin.admin.alets', $this->buildDashboardData());
+    }
+    public function settings(): View
+    {
+        return view('bid_admin.admin.settings', $this->buildAdminSettingsData());
+    }
+
+    public function updateSettings(Request $request): RedirectResponse
+    {
+        $tab = (string) $request->input('settings_tab', 'platform');
+
+        $allowedTabs = ['platform', 'payments', 'auction', 'notifications', 'security'];
+        if (! in_array($tab, $allowedTabs, true)) {
+            $tab = 'platform';
+        }
+
+        $defaults = $this->defaultAdminSettings();
+        $settings = $this->getAdminSettings();
+
+        if ($tab === 'platform') {
+            $validated = $request->validate([
+                'platform_name' => ['required', 'string', 'max:255'],
+                'support_email' => ['required', 'email', 'max:255'],
+                'default_currency' => ['required', 'string', 'in:USD,EUR,INR,AED'],
+                'platform_commission' => ['required', 'numeric', 'min:0', 'max:100'],
+            ]);
+
+            $settings['platform'] = array_merge($defaults['platform'], [
+                'platform_name' => $validated['platform_name'],
+                'support_email' => $validated['support_email'],
+                'default_currency' => $validated['default_currency'],
+                'platform_commission' => round((float) $validated['platform_commission'], 2),
+            ]);
+        }
+
+        if ($tab === 'payments') {
+            $validated = $request->validate([
+                'payment_deadline_hours' => ['required', 'integer', 'min:1', 'max:720'],
+            ]);
+
+            $settings['payments'] = array_merge($defaults['payments'], [
+                'enable_bank_transfer' => $request->boolean('enable_bank_transfer'),
+                'enable_card_payment' => $request->boolean('enable_card_payment'),
+                'enable_wallet_payment' => $request->boolean('enable_wallet_payment'),
+                'payment_deadline_hours' => (int) $validated['payment_deadline_hours'],
+            ]);
+        }
+
+        if ($tab === 'auction') {
+            $validated = $request->validate([
+                'minimum_bid_increment' => ['required', 'numeric', 'min:0'],
+                'auction_duration_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
+                'auto_extend_auction' => ['required', 'string', 'in:enabled,disabled'],
+            ]);
+
+            $settings['auction'] = array_merge($defaults['auction'], [
+                'minimum_bid_increment' => round((float) $validated['minimum_bid_increment'], 2),
+                'auction_duration_minutes' => (int) $validated['auction_duration_minutes'],
+                'auto_extend_auction' => $validated['auto_extend_auction'],
+            ]);
+        }
+
+        if ($tab === 'notifications') {
+            $settings['notifications'] = array_merge($defaults['notifications'], [
+                'email_notifications' => $request->boolean('email_notifications'),
+                'sms_notifications' => $request->boolean('sms_notifications'),
+                'push_notifications' => $request->boolean('push_notifications'),
+            ]);
+        }
+
+        if ($tab === 'security') {
+            $validated = $request->validate([
+                'password_minimum_length' => ['required', 'integer', 'min:6', 'max:64'],
+            ]);
+
+            $settings['security'] = array_merge($defaults['security'], [
+                'enable_two_factor_authentication' => $request->boolean('enable_two_factor_authentication'),
+                'fraud_detection_system' => $request->boolean('fraud_detection_system'),
+                'password_minimum_length' => (int) $validated['password_minimum_length'],
+            ]);
+        }
+
+        $this->storeAdminSettings($settings);
+
+        return redirect()
+            ->route('admin.settings', ['tab' => $tab])
+            ->with('success', ucfirst($tab) . ' settings saved successfully.');
+    }
 
     private function buildDashboardData(): array
     {
@@ -1528,6 +1617,83 @@ class AdminController extends Controller
             'transactionBarData' => $dateLabels->map(fn ($date) => round((float) ($transactionsByDay[$date->toDateString()] ?? 0), 2))->all(),
             'transactionLineData' => $dateLabels->map(fn ($date) => round((float) ($bidsByDay[$date->toDateString()] ?? 0), 2))->all(),
             'revenueChartData' => $dateLabels->map(fn ($date) => round((float) ($transactionsByDay[$date->toDateString()] ?? 0), 2))->all(),
+        ];
+    }
+
+    private function buildAdminSettingsData(): array
+    {
+        return array_merge($this->buildDashboardData(), [
+            'settingsData' => $this->getAdminSettings(),
+            'activeSettingsTab' => request()->query('tab', session('active_settings_tab', 'platform')),
+        ]);
+    }
+
+    private function getAdminSettings(): array
+    {
+        $defaults = $this->defaultAdminSettings();
+
+        if (! Schema::hasTable('app_settings')) {
+            return $defaults;
+        }
+
+        $stored = AppSetting::query()->where('key', 'admin_settings')->value('value');
+        if (! is_array($stored)) {
+            return $defaults;
+        }
+
+        return [
+            'platform' => array_merge($defaults['platform'], (array) ($stored['platform'] ?? [])),
+            'payments' => array_merge($defaults['payments'], (array) ($stored['payments'] ?? [])),
+            'auction' => array_merge($defaults['auction'], (array) ($stored['auction'] ?? [])),
+            'notifications' => array_merge($defaults['notifications'], (array) ($stored['notifications'] ?? [])),
+            'security' => array_merge($defaults['security'], (array) ($stored['security'] ?? [])),
+        ];
+    }
+
+    private function storeAdminSettings(array $settings): void
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return;
+        }
+
+        AppSetting::query()->updateOrCreate(
+            ['key' => 'admin_settings'],
+            ['value' => $settings]
+        );
+
+        session(['active_settings_tab' => request()->input('settings_tab', 'platform')]);
+    }
+
+    private function defaultAdminSettings(): array
+    {
+        return [
+            'platform' => [
+                'platform_name' => 'Global Fish Auction',
+                'support_email' => 'support@auction.com',
+                'default_currency' => 'USD',
+                'platform_commission' => 5,
+            ],
+            'payments' => [
+                'enable_bank_transfer' => true,
+                'enable_card_payment' => true,
+                'enable_wallet_payment' => false,
+                'payment_deadline_hours' => 48,
+            ],
+            'auction' => [
+                'minimum_bid_increment' => 50,
+                'auction_duration_minutes' => 30,
+                'auto_extend_auction' => 'enabled',
+            ],
+            'notifications' => [
+                'email_notifications' => true,
+                'sms_notifications' => true,
+                'push_notifications' => false,
+            ],
+            'security' => [
+                'enable_two_factor_authentication' => true,
+                'fraud_detection_system' => true,
+                'password_minimum_length' => 8,
+            ],
         ];
     }
 

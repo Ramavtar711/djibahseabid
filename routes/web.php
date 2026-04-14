@@ -80,6 +80,7 @@ Route::prefix('admin')->group(function () {
     Route::get('/risk-monitoring', [AdminController::class, 'riskMonitoring'])->name('admin.risk-monitoring');
     Route::get('/alets', [AdminController::class, 'alets'])->name('admin.alets');
     Route::get('/settings', [AdminController::class, 'settings'])->name('admin.settings');
+    Route::post('/settings', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
 });
 
 Route::prefix('qc')->group(function () {

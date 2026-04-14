@@ -14,6 +14,23 @@
 @stack('scripts')
 <script type="text/javascript">
    (function () {
+      var wrapTablesForMobile = function () {
+         var tables = document.querySelectorAll('.content table');
+
+         tables.forEach(function (table) {
+            if (table.closest('.admin-responsive-table') || table.closest('.table-responsive')) {
+               return;
+            }
+
+            var wrapper = document.createElement('div');
+            wrapper.className = 'admin-responsive-table';
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+         });
+      };
+
+      wrapTablesForMobile();
+
       var bell = document.getElementById('notification_popup');
       var list = document.getElementById('adminNotificationList');
       var badge = document.getElementById('adminNotificationBadge');
